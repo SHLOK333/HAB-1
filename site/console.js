@@ -569,12 +569,14 @@ async function loadSessions() {
     const a = await timeout(arkiv(), 15000), { eq, desc } = a.q
     const res = await timeout(a.client.select({ run: true, startedAt: true, receiver: true }).from(a.Run).where(eq("flight", FLIGHT)).ownedBy(OWNER).orderBy(desc("startedAt")).limit(30).fetch(), 20000)
     const seen = new Set(), runs = res.entities.map(val).filter(r => !seen.has(r.run) && seen.add(r.run))
-    S.arkivOk = true
-    $("session").innerHTML = `<option value="flight">31 Oct 2026 flight log</option><optgroup label="Sessions recorded on Arkiv">${runs.map(r => `<option value="${esc(r.run)}">${esc(r.run)} · ${new Date(Number(r.startedAt) * 1000).toISOString().slice(0, 16).replace("T", " ")}</option>`).join("")}</optgroup>`
+    S.arkivOk = true; S.runs = runs
+    $("session").innerHTML = `<option value="arkiv-live">● Live from Arkiv (newest session)</option><option value="flight">31 Oct 2026 flight log</option><optgroup label="Sessions recorded on Arkiv">${runs.map(r => `<option value="${esc(r.run)}">${esc(r.run)} · ${new Date(Number(r.startedAt) * 1000).toISOString().slice(0, 16).replace("T", " ")}</option>`).join("")}</optgroup>`
   } catch (e) { S.arkivOk = false; log("arkiv", `<span class="warn">Arkiv unreachable</span> · ${esc(e.message)} · recorded sessions unavailable`) }
   renderSystems()
 }
 async function loadRun(run) {
+  clearInterval(AL.timer); AL.on = false; $("mode").textContent = "Archive"; $("mode").dataset.mode = "archive"
+  if (run === "arkiv-live") return followArkiv()
   S.frames.clear(); S.sigs = []; S.lastFrame = null; S.selected = null; LOG.length = 0
   if (run === "flight") { archiveFlightLog(); refresh(); return }
   log("arkiv", `loading session <b>${esc(run)}</b> from Arkiv…`)
@@ -598,6 +600,71 @@ async function loadRun(run) {
   } catch (e) { log("arkiv", `<span class="bad">could not load ${esc(run)}</span> · ${esc(e.message)}`) }
   refresh()
 }
+// ---------------------------------------------------------------- live from Arkiv (public site, no station)
+// The ground station writes every verified frame to Arkiv within about a minute of hearing it.
+// This follows the newest session there: anyone, anywhere, watches the balloon from Arkiv, not
+// from our server. New frames play with the same animations as on the ground station.
+const AL = { on: false, timer: 0, run: null, lastSeq: -1, keys: new Set(), at: 0 }
+function packetToFrame(r, run) {
+  const hex = r.frame ? (typeof r.frame === "string" ? r.frame.replace(/^0x/, "") : [...r.frame].map(b => b.toString(16).padStart(2, "0")).join("")) : null
+  return { seq: Number(r.seq), flightS: Number(r.flightS), lat: Number(r.lat), lon: Number(r.lon), altM: Number(r.altM), rssi: Number(r.rssi), snr: Number(r.snr), verdict: ARKIV_VERDICT[r.verdict] ?? r.verdict,
+    livePa: r.livePa != null ? Number(r.livePa) / 100 : null, liveC: r.liveC != null ? Number(r.liveC) : null, liveSrc: r.livePa != null ? "pi" : null, hex, beaconKey: r.beaconKey, run, key: r.$key, heardAt: Date.now() }
+}
+async function arkivPackets(a, run, fromSeq) {
+  const { and, eq, gte, asc } = a.q, rows = []
+  const where = fromSeq >= 0 ? and(eq("flight", FLIGHT), eq("run", run), gte("seq", a.sc.u64(fromSeq))) : and(eq("flight", FLIGHT), eq("run", run))
+  for (let off = 0; ; off += 100) {
+    const p = await timeout(a.client.select({ $key: true, seq: true, flightS: true, lat: true, lon: true, altM: true, verdict: true, rssi: true, snr: true, frame: true, livePa: true, liveC: true, beaconKey: true, receiver: true })
+      .from(a.Packet).where(where).ownedBy(OWNER).orderBy(asc("seq")).limit(100).offset(off).fetch(), 20000)
+    rows.push(...p.entities.map(val)); if (p.entities.length < 100) break
+  }
+  return rows
+}
+function alStatus() {
+  $("mode").textContent = "Live · Arkiv"; $("mode").dataset.mode = "live"
+  $("viewbar-note").textContent = `following ${AL.run} on Arkiv · checked ${AL.at ? new Date(AL.at).toISOString().slice(11, 19) : "…"} UTC · frames appear about a minute after the ground hears them`
+}
+async function followArkiv() {
+  clearInterval(AL.timer); AL.on = true; S.frames.clear(); S.sigs = []; S.lastFrame = null; S.selected = null; LOG.length = 0; AL.keys.clear(); AL.lastSeq = -1
+  if (!S.runs?.length) { log("arkiv", `<span class="warn">no session found on Arkiv yet</span>`); return }
+  AL.run = S.runs[0].run; alStatus()
+  log("arkiv", `following the newest session <b>${esc(AL.run)}</b> live from Arkiv`)
+  try {
+    const a = await timeout(arkiv(), 15000), rows = await arkivPackets(a, AL.run, -1)
+    for (const r of rows) { if (AL.keys.has(r.$key)) continue; AL.keys.add(r.$key); const f = packetToFrame(r, AL.run); S.frames.set(f.seq, f); AL.lastSeq = Math.max(AL.lastSeq, f.seq) }
+    const sorted = [...S.frames.values()].sort((x, y) => x.seq - y.seq); S.lastFrame = sorted.at(-1) ?? null
+    // a flight other than HAB-1's replay: hide HAB-1's track so the map shows what is really flying
+    const near = sorted[0] && dist(sorted[0], F.pad) < 8000; S.layers.archive = !!near
+    if (S.lastFrame) { followTo(S.lastFrame.lat, S.lastFrame.lon) }
+    log("arkiv", `${rows.length} frames of <b>${esc(AL.run)}</b> read from Arkiv; watching for new ones every 20 s`)
+  } catch (e) { log("arkiv", `<span class="bad">Arkiv did not answer</span> · ${esc(e.message)}`) }
+  AL.at = Date.now(); alStatus(); refresh()
+  AL.timer = setInterval(alPoll, 20000)
+}
+async function alPoll() {
+  if (!AL.on) return
+  try {
+    const a = await timeout(arkiv(), 15000)
+    // a newer session started (a new Start session on the ground station): follow it
+    const { eq, desc } = a.q
+    const top = (await timeout(a.client.select({ run: true, startedAt: true }).from(a.Run).where(eq("flight", FLIGHT)).ownedBy(OWNER).orderBy(desc("startedAt")).limit(1).fetch(), 15000)).entities.map(val)[0]
+    if (top && top.run !== AL.run) { S.runs.unshift(top); clearInterval(AL.timer); return followArkiv() }
+    const rows = (await arkivPackets(a, AL.run, AL.lastSeq + 1)).filter(r => !AL.keys.has(r.$key))
+    rows.forEach((r, i) => {
+      AL.keys.add(r.$key)
+      setTimeout(() => {                                       // a batch arrives at once on Arkiv; play it out frame by frame
+        const f = packetToFrame(r, AL.run); S.frames.set(f.seq, f); S.lastFrame = f; AL.lastSeq = Math.max(AL.lastSeq, f.seq)
+        fxAdd({ k: "tx", from: [f.lon, f.lat, f.altM], dur: 1500 })
+        if (/REJECTED/.test(f.verdict)) { fxAdd({ k: "bad", at: [f.lon, f.lat, f.altM], dur: 2600 }); toast("bad", "Forged frame rejected", `seq ${f.seq} · read from Arkiv`) }
+        else if (f.verdict === "VERIFIED") fxAdd({ k: "ok", at: [f.lon, f.lat, f.altM], dur: 1200, delay: 500 })
+        log("radio", `seq ${f.seq} · ${fmt(f.altM)} m · <span class="${VERDICT_CLASS(f.verdict)}">${esc(f.verdict)}</span> · <span class="mono">from Arkiv · entity ${short(f.key)}</span>`, { tlabel: tPlus(f.flightS) })
+        followTo(f.lat, f.lon); refresh()
+      }, i * 700)
+    })
+  } catch (e) { /* Arkiv busy: try again on the next tick */ }
+  AL.at = Date.now(); alStatus()
+}
+
 function archiveFlightLog() {
   const add = (t, src, html) => log(src, html, { tlabel: tPlus(t) })
   add(0, "payload", `released from the pad · ${pos(F.pad.lat, F.pad.lon)} · ${hms(RELEASE)} UTC`)
@@ -1129,7 +1196,9 @@ addEventListener("resize", () => { drawScrub(); renderPlots() })
 addEventListener("keydown", e => { if (e.code === "Space" && S.mode !== "live" && !/INPUT|SELECT|TEXTAREA|BUTTON/.test(document.activeElement.tagName)) { e.preventDefault(); $("play").click() } })
 const qs = new URLSearchParams(location.search)
 if (qs.get("t")) { S.t = Number(qs.get("t")); draw(); renderInspector() }
-if (!live) loadSessions().then(() => { const want = qs.get("session"); if (want && [...$("session").options].some(o => o.value === want)) { $("session").value = want; S.session = want } if (S.session !== "flight") loadRun(S.session) })
+if (!live) loadSessions().then(() => { const recent = S.runs?.[0] && Date.now() / 1000 - Number(S.runs[0].startedAt) < 12 * 3600
+  if (!qs.get("session") && recent) { $("session").value = "arkiv-live"; S.session = "arkiv-live" }   // loaded by the line below
+  const want = qs.get("session"); if (want && [...$("session").options].some(o => o.value === want)) { $("session").value = want; S.session = want } if (S.session !== "flight") loadRun(S.session) })
 if (qs.get("session")) S.session = qs.get("session")
 if (qs.get("tab")) showInspector(`i-${qs.get("tab")}`)
 if (qs.get("dock")) document.querySelector(`.dock [aria-controls="d-${qs.get("dock")}"]`)?.click()

@@ -11,7 +11,7 @@ Partner tracks: **0G** (Physical AI), **Hedera** (x402 agents that pay), **Arkiv
 > given), **datasheet**, or **assumed**. Things that are not done are listed in
 > [What is not done](#what-is-not-done).
 
-**Live demo: [hab-1.vercel.app](https://hab-1.vercel.app)** (the console in Archive mode; the live hardware runs on the ground-station laptop at `localhost:8090`).
+**Live demo: [hab-1.vercel.app](https://hab-1.vercel.app).** When a session is running, the public site follows it **live from Arkiv** ("Live · Arkiv"): it reads the newest session's verified frames from Arkiv every 20 s and plays them with the same animations, about a minute behind the radio, with no connection to our laptop. Otherwise it shows the recorded flight and sessions. The hardware controls (start, fly, inject) run on the ground-station laptop at `localhost:8090`.
 
 ### For judges: where to look
 
