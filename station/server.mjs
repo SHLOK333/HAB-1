@@ -16,6 +16,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { spawn } from "node:child_process"
 import os from "node:os"
+import net from "node:net"
 import { loadGfs, measuredFromFixes, simulate, km } from "../mission/tawhiri.mjs"
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..")
@@ -266,6 +267,11 @@ function fireAttack(seq) {
   send("cmd", { id: "attack-timing", name: "attack", line: `arming the beacon now: the fake goes out with seq ${seq + 1}, the last frame of batch ${seq - 4}–${seq + 1}; its SIG frame follows about 12 s later` })
   runAction("attack", {}, true)
 }
+// Is the beacon on the hotspot? Its log/command port (2323) answers if it is.
+function beaconOnWifi() {
+  const tryIp = ip => new Promise(res => { const s = net.connect({ host: ip, port: 2323, timeout: 600 }, () => { s.destroy(); res(ip) }); s.on("error", () => res(null)); s.on("timeout", () => { s.destroy(); res(null) }) })
+  return Promise.all(Array.from({ length: 13 }, (_, i) => tryIp(`172.20.10.${i + 2}`))).then(r => r.find(Boolean) ?? null)
+}
 function armAttack() {
   const e = state.lastFrame, age = (Date.now() - state.lastFrameAt) / 1000
   if (e && e.seq % 6 === 4 && age < 9) { fireAttack(e.seq); return { ok: true, id: "attack-now" } }
@@ -276,7 +282,15 @@ function armAttack() {
 }
 
 function runAction(name, body, timed) {
-  if (name === "attack" && !timed) return armAttack()
+  if (name === "attack" && !timed) {
+    // check first, so the operator is not left waiting for a command that cannot reach the beacon
+    beaconOnWifi().then(ip => {
+      if (ip) return armAttack()
+      send("cmd", { id: "attack-timing", name: "attack", line: "The beacon is not on Wi-Fi, so this button cannot reach it. Press the PRG button on the beacon instead (the Protocol page shows the best moment), or open the iPhone's Personal Hotspot screen so the beacon rejoins." })
+      send("cmd", { id: "attack-timing", name: "attack", done: true, code: 1 })
+    })
+    return { ok: true, id: "attack-check" }
+  }
   if (running && name !== "stop") return { ok: false, error: `busy: ${running.name} is still running` }
   const [cmd, args, cwd] = ACTIONS[name](body), id = `${name}-${Date.now()}`
   const p = spawn(cmd, args, { cwd: cwd ?? ROOT, env: process.env })
