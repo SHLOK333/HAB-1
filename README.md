@@ -1057,6 +1057,22 @@ Transactions tab shows each one with its block and gas).
 | On the ground | seq 727 to 731: `live 939.2 to 939.3 hPa, 28.93 to 29.02 C (pi)`, all VERIFIED: the signature covers the live reading |
 | Agent stopped | from the next frames (seq 733 on), no live reading; frames still VERIFIED |
 
+### Fly any flight on the real hardware (7 Nov 2026)
+
+On the main map, **Flight ▾** (or **Fly** on the Flights page) lists HAB-1, Tawhiri simulations
+and public balloons near India (SondeHub). Picking one sends it to the beacon over Wi-Fi; the
+beacon then transmits it exactly as it does HAB-1's replay: signed batches, verified on the
+ground, published to Arkiv, with the Pi's live barometer in every frame. The station
+(`/api/flight` in `station/server.mjs`) resamples the flight to at most 180 points (one per
+minute where it fits), adds standard-atmosphere pressure and temperature, starts it on the pad
+(-60 s) so every receiver resets, and sends `flight new / add / go` to the beacon (firmware: a
+second sample table in RAM; `flight builtin` or a reboot returns to HAB-1). Landing
+re-prediction is paused for uploaded flights, because the cached winds are for HAB-1's day and pad.
+
+Measured: a Tawhiri flight from Pune (126 samples, peak 19,372 m) switched in 7.5 s; the next
+batch, seq 12 to 17 at 18.50 N 73.8 E climbing from 4,374 to 9,822 m, had a valid signature and
+all 6 frames VERIFIED.
+
 ### 0G over LoRa: a 0G decision reaches the payload with no internet on board (run `lora-1106`, 6 Nov 2026)
 
 In flight the payload has no internet, so 0G is reached through the radio. The ground station

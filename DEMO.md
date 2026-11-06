@@ -87,6 +87,7 @@ The coloured dots on the right open the matching page.
 | Pitch moment | Do | Show |
 |---|---|---|
 | The real flight, replayed | nothing; wait one batch (about 84 s) | map track grows in green; `./demo.sh logs verifier` shows VERIFIED |
+| Fly another flight | main map → **Flight ▾** → pick a Tawhiri simulation or a public balloon | the beacon switches in a few seconds; frames now come from that flight, still signed and verified |
 | Watch the protocol | console → **Protocol** in the top bar (`http://localhost:8090/#/protocol`) | each frame crosses the LoRa link and arrives byte by byte; every 7th slot the SIG frame reveals the salt and the browser re-checks each hash and the Ed25519 signature itself |
 | A fake frame | press **PRG** when the Protocol page says *Press PRG on the beacon now* (caught in about 12 to 24 s), or click **Inject forged frame** in Mission, which waits for that moment itself | verifier: FAKE REJECTED; a red dot on the map after the next batch |
 | What HAB-1 would have done | `./demo.sh noverify`, then press PRG within 30 s | the fake is ACCEPTED. Afterwards `./demo.sh stop && ./demo.sh start demo-final-2` |
