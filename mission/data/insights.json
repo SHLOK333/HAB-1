@@ -392,5 +392,142 @@
   "at": "2026-11-06T06:33:54.815Z",
   "entityKey": "0xc06aabad865d4d457558d77df9a1ec21251620d020907166c6d81b0690cf47ec",
   "txHash": "0x34e0746bed18f2887b0400270aac0601f464e89248cdb03b83eaa351ef6fdb03"
+ },
+ {
+  "topic": "jet-stream",
+  "model": "deepseek-v4-pro",
+  "teeAttested": false,
+  "requestId": "chatcmpl-a071d02c-9f08-97cb-91fa-5aed2ec1d3cc",
+  "e2ee": "none",
+  "headline": "Jet stream peaked at 12-14 km (25.1 m/s measured); GFS differed most at 10-12 km.",
+  "findings": [
+   "Measured winds increased from 17.6 m/s at 8-10 km to a peak of 21.7 m/s at 12-14 km, then decreased to 4.3 m/s by 18-20 km.",
+   "The jet stream core was located between 12 and 14 km altitude, with a maximum measured wind of 25.1 m/s.",
+   "GFS model winds were closest to measured at 12-14 km (23.8 vs 21.7 m/s) and 16-18 km (6.5 vs 6.3 m/s).",
+   "The largest absolute difference was at 10-12 km, where GFS under-predicted the mean wind by 3.5 m/s (17.5 vs 21.0 m/s).",
+   "GFS also under-predicted at 8-10 km by 1.7 m/s and over-predicted at 14-16 km by 2.5 m/s."
+  ],
+  "anomalies": [
+   "GFS data has only one sample per altitude band, making statistical comparison unreliable.",
+   "GFS shows a secondary wind increase at 20-22 km (7.3 m/s) not present in measured data (no measurements above 20 km).",
+   "Measured wind at 14-16 km drops sharply (11.5 m/s) compared to 12-14 km (21.7 m/s), indicating a narrow jet core."
+  ],
+  "guard": {
+   "model": "qwen3.6-plus",
+   "requestId": "chatcmpl-d26e99e9-c643-9156-b88d-500a139a5c5b",
+   "teeVerified": false,
+   "verdict": "supported",
+   "flagged": [],
+   "fallbackFrom": "vela-2.0-9b (502)"
+  },
+  "arkivQuery": "Wind where flight=hab1-2026-10-31 and dataset=mission-v1 and altM >= 8000 and source = measured | gfs, ordered by altM",
+  "inputs": [
+   "8-10km measured: n=14 mean=17.6 max=20.8 m/s",
+   "10-12km measured: n=11 mean=21.0 max=23.0 m/s",
+   "12-14km measured: n=12 mean=21.7 max=25.1 m/s",
+   "14-16km measured: n=12 mean=11.5 max=14.8 m/s",
+   "16-18km measured: n=11 mean=6.3 max=8.1 m/s",
+   "18-20km measured: n=9 mean=4.3 max=6.6 m/s",
+   "8-10km gfs: n=1 mean=19.3 max=19.3 m/s",
+   "10-12km gfs: n=1 mean=17.5 max=17.5 m/s",
+   "12-14km gfs: n=1 mean=23.8 max=23.8 m/s",
+   "14-16km gfs: n=1 mean=14.0 max=14.0 m/s",
+   "16-18km gfs: n=1 mean=6.5 max=6.5 m/s",
+   "18-20km gfs: n=1 mean=3.3 max=3.3 m/s",
+   "20-22km gfs: n=1 mean=7.3 max=7.3 m/s",
+   "22-24km gfs: n=1 mean=4.8 max=4.8 m/s"
+  ],
+  "at": "2026-11-06T08:40:54.456Z",
+  "entityKey": "0x978d9f776a2a73e464d8ca6acc2466c15aa1fecae3012b16d98d6a11604782f5",
+  "txHash": "0xfb55efbba6e4079f3661102a02f5eec3e45104fa7f52fbcbbc783d513ca66639"
+ },
+ {
+  "topic": "landing-error",
+  "model": "deepseek-v4-pro",
+  "teeAttested": false,
+  "requestId": "chatcmpl-7f079f5b-4d34-9b79-adc4-be1143eec7a6",
+  "e2ee": "none",
+  "headline": "Error stayed mostly 1–4 km, with best values late in flight.",
+  "findings": [
+   "Prediction error was already below 2 km at T+20 min (1.32 km), but then rose above 2 km from T+30 to T+50 min.",
+   "From T+60 min onward, error remained below 2 km, improving to 0.38 km at T+100 min.",
+   "71 of 126 predictions were within 2 km, with the first good-enough prediction at T+15 min."
+  ],
+  "anomalies": [
+   "T+30 min error jumped to 4.26 km despite more measured bands (17) than T+20 min.",
+   "T+80 min altitude dropped sharply from 19,557 m to 14,383 m while measuredBands stayed at 38.",
+   "T+100 min error was only 0.38 km, much better than surrounding times."
+  ],
+  "guard": {
+   "model": "qwen3.6-plus",
+   "requestId": "chatcmpl-92c11f0c-6af8-98b8-ba16-698998ef731f",
+   "teeVerified": false,
+   "verdict": "flagged",
+   "flagged": [
+    {
+     "text": "From T+60 min onward, error remained below 2 km",
+     "p": null
+    }
+   ],
+   "fallbackFrom": "vela-2.0-9b (502)"
+  },
+  "arkivQuery": "Prediction where flight=hab1-2026-10-31 and dataset=mission-v1 and kind=inflight (all, and errorKm <= 2), ordered by fromFlightS",
+  "inputs": [
+   "T+0min alt=476m measuredBands=0 error=3.84km",
+   "T+10min alt=3222m measuredBands=6 error=3.11km",
+   "T+20min alt=6044m measuredBands=11 error=1.32km",
+   "T+30min alt=8843m measuredBands=17 error=4.26km",
+   "T+40min alt=11448m measuredBands=22 error=3.59km",
+   "T+50min alt=14147m measuredBands=28 error=4.03km",
+   "T+60min alt=16951m measuredBands=33 error=1.14km",
+   "T+70min alt=19557m measuredBands=38 error=1.84km",
+   "T+80min alt=14383m measuredBands=38 error=1.8km",
+   "T+90min alt=10174m measuredBands=38 error=1.42km",
+   "T+100min alt=6554m measuredBands=38 error=0.38km",
+   "T+110min alt=3691m measuredBands=38 error=1.46km",
+   "T+120min alt=1622m measuredBands=38 error=1.06km",
+   "predictions within 2 km of the real landing: 71 of 126; the first from T+15 min"
+  ],
+  "at": "2026-11-06T08:41:19.124Z",
+  "entityKey": "0x7ed0e542b38fbdd48b64dd294081630b1cfbf112547bdb5016200ad577ae5acb",
+  "txHash": "0xd7e8e27ecdf5b741de5c24808eac92b492774c4b7fe544710a972ab86ad0b6e2"
+ },
+ {
+  "topic": "verification",
+  "model": "deepseek-v4-pro",
+  "teeAttested": false,
+  "requestId": "chatcmpl-385159d4-4b49-9e6d-8166-47ba92ad44f7",
+  "e2ee": "none",
+  "headline": "Link is healthy; only 5 fake frames out of 956 received.",
+  "findings": [
+   "951 of 956 received frames (99.5%) were successfully verified.",
+   "No bad signatures, unverified, replay, conflict, or unsigned frames were observed.",
+   "The 5 fake frames indicate a minor injection attempt or corrupted frames that failed verification."
+  ],
+  "anomalies": [
+   "5 fake frames present despite otherwise clean verification results.",
+   "Zero replay or conflict frames suggests no detected replay or spoofing attacks beyond the fake frames."
+  ],
+  "guard": {
+   "model": "qwen3.6-plus",
+   "requestId": "chatcmpl-afd71756-0a00-9990-b424-53cfaadee040",
+   "teeVerified": false,
+   "verdict": "supported",
+   "flagged": [],
+   "fallbackFrom": "vela-2.0-9b (502)"
+  },
+  "arkivQuery": "count(Packet) where flight=hab1-2026-10-31 and verdict=<each>, owned by this ground station",
+  "inputs": [
+   "verified: 951",
+   "fake: 5",
+   "bad_signature: 0",
+   "unverified: 0",
+   "replay: 0",
+   "conflict: 0",
+   "unsigned: 0"
+  ],
+  "at": "2026-11-06T08:41:42.384Z",
+  "entityKey": "0x5f022a1f00df9728b760b72df97fdcbee9f0e1f312007020f8ce16e251238fbf",
+  "txHash": "0xc63d65bd14694ab02b101be94e8b6bbe3e381767c67d9c600dd8d1dec03d9401"
  }
 ]
