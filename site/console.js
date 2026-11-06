@@ -23,7 +23,7 @@ const R = 6371008.8, rad = d => d * Math.PI / 180
 const dist = (a, b) => { const h = Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lon - a.lon) / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)) }
 const bearing = (a, b) => { const y = Math.sin(rad(b.lon - a.lon)) * Math.cos(rad(b.lat)), x = Math.cos(rad(a.lat)) * Math.sin(rad(b.lat)) - Math.sin(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.cos(rad(b.lon - a.lon)); return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360 }
 const VERDICT_CLASS = v => (v === "VERIFIED" ? "ok" : /REJECTED/.test(v ?? "") ? "bad" : "warn")
-const ARKIV_VERDICT = { unsigned: "UNSIGNED beacon restarted", verified: "VERIFIED", fake: "FAKE REJECTED", bad_signature: "REJECTED bad signature", unverified: "ACCEPTED unverified", replay: "REPLAY REJECTED", conflict: "CONFLICT REJECTED" }
+const ARKIV_VERDICT = { unsigned: "UNSIGNED signature not heard", verified: "VERIFIED", fake: "FAKE REJECTED", bad_signature: "REJECTED bad signature", unverified: "ACCEPTED unverified", replay: "REPLAY REJECTED", conflict: "CONFLICT REJECTED" }
 
 // ---------------------------------------------------------------- state
 const S = {
@@ -938,7 +938,7 @@ function prRenderHist(animate) {
   $("pr-hist").innerHTML = PR.batches.length ? PR.batches.map((b, i) => `<li class="${animate && i === 0 ? "new" : ""}">
       <span class="mono">seq ${b.first}–${b.first + BATCH_N - 1}</span>
       <span class="cells">${b.states.map(s => `<i data-s="${s}"></i>`).join("")}</span>
-      <span>${b.n}/${BATCH_N} verified${b.fk ? ` · <span class="bad">${b.fk} forged</span>` : ""}${b.us ? ` · ${b.us} unsigned (beacon restart)` : ""} · Ed25519 ${b.edBrowser ? '<span class="ok">valid (browser)</span>' : b.edBrowser === false ? '<span class="bad">invalid</span>' : b.edStation ? '<span class="ok">valid (station)</span>' : '<span class="bad">invalid</span>'}</span>
+      <span>${b.n}/${BATCH_N} verified${b.fk ? ` · <span class="bad">${b.fk} forged</span>` : ""}${b.states.filter(s => s === "missing").length ? ` · <span class="dim">${b.states.filter(s => s === "missing").length} not heard</span>` : ""}${b.us ? ` · ${b.us} unsigned (older frames)` : ""} · Ed25519 ${b.edBrowser ? '<span class="ok">valid (browser)</span>' : b.edBrowser === false ? '<span class="bad">invalid</span>' : b.edStation ? '<span class="ok">valid (station)</span>' : '<span class="bad">invalid</span>'}</span>
       <span class="mono">${b.arkivTx ? `Arkiv <a href="https://rabdi.explorer.arkiv.network/tx/${b.arkivTx}" target="_blank" rel="noopener">${short(b.arkivTx)}</a> · ${b.arkivMs} ms` : "publishing to Arkiv…"}</span></li>`).join("")
     : `<li class="pr-empty">${S.mode === "live" ? "No batch signature heard yet: one comes every 7th slot (about 84 s)." : "Archive mode: signed batches appear here live on the ground station."}</li>`
 }

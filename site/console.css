@@ -495,3 +495,4 @@ body[data-page="hedera"] #pg-hedera, body[data-page="arkiv"] #pg-arkiv { display
 .ms-log .pay { color: var(--accent); } .ms-log .ok { color: var(--nominal); } .ms-log .warn { color: var(--caution); }
 .lg-link { border-color: var(--accent) !important; }
 @media (max-width: 1100px) { .sim-grid { grid-template-columns: 1fr; } }
+.pr-hist .dim { color: var(--text-3); }
