@@ -18,7 +18,7 @@
 
 | Item | Value |
 |---|---|
-| Transactions, session `demo-20261102-a` | 4 to start: 1 session entity, then batches of 1, 7 and 6 packets, all status success (receipts fetched from the RPC) |
+| Transactions, session `retest-1106` (new wallets, 6 Nov 2026) | 1 session entity, then a batch every 70 to 80 s (usually 6 packets), confirmed 5 to 12 s after sending; the console shows each with its block and gas |
 | Gas | 205,815 (session entity); 223,976 (1 packet); 1,413,625 (7 packets); 1,213,181 (6 packets), about 200,000 per packet |
 | Time to confirm a batch | 4.5 to 10.5 s from send to receipt |
 | Cost | 0.0218 tGLM over the first 19 transactions (wallet went from 3.0 to 2.978196431 tGLM) |
