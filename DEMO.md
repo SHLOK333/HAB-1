@@ -82,7 +82,7 @@ own key and has the board sign the allowance.
 | The real flight, replayed | nothing; wait one batch (about 84 s) | map track grows in green; `./demo.sh logs verifier` shows VERIFIED |
 | A fake frame | press **PRG** on the beacon, or `./demo.sh attack` | verifier: FAKE REJECTED; a red dot on the map after the next batch |
 | What HAB-1 would have done | `./demo.sh noverify`, then press PRG within 30 s | the fake is ACCEPTED. Afterwards `./demo.sh stop && ./demo.sh start demo-final-2` |
-| 0G decides | wait for the replay to pass burst (about every 6 min); `./demo.sh pi-log` | `[burst] start_recovery` with a request ID; "0G: recovery" on the beacon screen |
+| 0G decides | wait for the replay to pass burst (about every 6 min); `./demo.sh pi-log` | `[burst] start_recovery ... vela-2.0-9b: P(start_recovery) = 0.92, threshold 0.8` with a request ID; "0G: recovery" on the beacon screen; `[vision] drop -> deleted (laya P(empty) = 0.9)` when Laya confirms a frame is empty. In the console: Ledger tab, each 0G analysis shows "claims checked by vela-2.0-9b" |
 | Offline, LoRa only | turn the iPhone hotspot off for 2 to 3 minutes (the payload has no internet in flight) | the console keeps receiving: every frame still VERIFIED and still carries the Pi's live hPa (`(pi)` in the verifier log). Turn the hotspot back on with its Settings screen open, so the Pi rejoins |
 | Safe stop | switch the Pi's internet off (or no 0G key) | `SAFE STOP` in `pi-log`; "SAFE STOP: no 0G" on the beacon; nothing deleted |
 | An agent pays | `./demo.sh buy 15000 5000` | wind data, a transaction with its HashScan link, an HCS message number, then each frame's proof `ok:true` |

@@ -509,9 +509,20 @@ rejected fakes in red, bad signatures in orange, unchecked frames in grey. Refre
 
   | Checkpoint | Trigger | Model on 0G | Actions |
   |---|---|---|---|
-  | burst | altitude 300 m below its peak | `0gm-1.0-35b-a3b` | `start_recovery` (switch to descent mode, tell the beacon) or `hold` |
-  | thermal | SoC at or above 70 C, or every 5 min | `0gm-1.0-35b-a3b` | `continue` or `pause_camera` |
-  | vision | every 60 s while the camera runs | `qwen3-vl-plus` | `keep` (queue the frame for downlink) or `drop` (delete it) |
+  | burst | altitude 300 m below its peak | `vela-2.0-9b` (decision model) | `start_recovery` (switch to descent mode, tell the beacon) only if P >= 0.8, else `hold` |
+  | thermal | SoC at or above 70 C, or every 5 min | `vela-2.0-9b` (decision model) | `continue` only if P >= 0.8, else `pause_camera` |
+  | vision | every 90 s while the camera runs | `qwen3-vl-plus`, then `laya` | `keep` (queue the frame for downlink) or `drop`; a frame is deleted only if Laya, reading the vision model's description, gives P(empty) >= 0.7 |
+
+  **Why decision models.** Vela 2.0 9B and Laya are 0G "System One" decision models
+  (`POST /v1/decisions`): typed questions answered with calibrated probabilities, run in a
+  TEE (Intel TDX, `tee_verified: true` in each response). A payload should not act on free
+  text: with a probability it takes the consequential action only above a threshold and
+  otherwise the safe one, and both numbers go into the signed log. Measured before choosing
+  (6 Nov 2026): Vela reads numbers (41.9 C: `continue` 0.999; 74.5 C: `pause_camera` 0.995;
+  a clear burst: `start_recovery` 0.98; a clear ascent: `hold` 0.999). Laya, a BERT-style
+  classifier, does not (about 0.5 at any temperature), but reads text well ("completely
+  black": empty 0.91; "clear view of the horizon": 0.14; "the balloon envelope is visible":
+  0.06), so it checks the vision model's words before anything is deleted.
 
   **Safe stop.** If 0G cannot be reached (no key, no network, timeout, HTTP error, or an answer
   that is not one of the allowed actions), the agent changes nothing, deletes nothing, raises an
@@ -730,7 +741,9 @@ the boards.
 
 | Requirement | How it is met | State |
 |---|---|---|
-| A 0G call inside the decision loop | `pi/agent.py` asks 0G at the burst, thermal and vision checkpoints; each answer changes the payload | **run live** (6 Nov 2026): at burst 0G answered `start_recovery` and the Pi switched to descent mode; thermal `continue`; vision `drop` deleted unusable frames |
+| A 0G call inside the decision loop | `pi/agent.py` asks 0G at the burst, thermal and vision checkpoints; each answer changes the payload | **run live** (6 Nov 2026): at burst Vela 2.0 9B gave `start_recovery` P = 0.924 (gate 0.8) and the Pi switched to descent mode; thermal `continue` 0.999; each `drop` from the vision model was confirmed by Laya (P(empty) 0.82 to 0.96) before the frame was deleted |
+| Decision models with calibrated probabilities | `vela-2.0-9b` and `laya` through `POST /v1/decisions`, every call with `verify_tee` | **verified**: `tee_verified: true` and a request ID on every response; about 10 micro-USD per Vela call, Laya free |
+| 0G analyses checked for unsupported claims | `mission/analytics.mjs`: `0gm-1.0-35b-a3b` writes the insight, then Vela marks any claim the Arkiv data does not support (span question) before it is stored | **verified**: the 3 insights on Arkiv are `guardVerdict=supported`; an insight with an invented claim ("the strongest wind was 25 m/s near the jet stream at 12 km", against a source with only one wind at 17,323 m) had exactly that claim marked (P 0.61 to 0.66) and the supported ones left alone |
 | An episode log on 0G Storage, a request ID per decision | each decision record carries the request and response ID; `zg/upload.mjs` uploads the log | **done**: `retest-1106`, 38 signed decisions (5 with a 0G request ID, 33 safe stops while the Pi was offline), on 0G Storage and in the registry (below) |
 | A replayable simulation or live hardware | the real flight hardware, replaying the 31 Oct flight; live sensors and camera | **runs** |
 | A safe stop if 0G is unreachable, no faked decision | holds a safe state, deletes nothing, alerts the beacon | **verified** |
@@ -763,9 +776,11 @@ What the log shows, in order (Pi clock, IST):
 | 11:19:23 | vision | `drop`: "Blurred, obstructed view" | `6201d48b4f41e960` |
 | 11:19:42 | burst | **`start_recovery`**: "Altitude decreased significantly, indicating balloon burst"; the Pi switched to descent mode | `170cc01d976c58fe` |
 
-The decision model is `0gm-1.0-35b-a3b` (TEE-attested on the 0G router), the vision model
-`qwen3-vl-plus`. The decision model thinks by default and spent all 200 tokens reasoning,
-leaving an empty answer (every checkpoint a safe stop); `pi/zg.py` now turns thinking off.
+In this uploaded log the burst and thermal model was still `0gm-1.0-35b-a3b` (TEE-attested on
+the 0G router), the vision model `qwen3-vl-plus`. That model thinks by default and spent all
+200 tokens reasoning, leaving an empty answer (every checkpoint a safe stop) until `pi/zg.py`
+turned thinking off. The payload has since moved burst and thermal to the decision model Vela
+2.0 9B and added Laya's check before deletions (below).
 
 **Found on the way:** the Pi was power-cycled while the agent was writing, and the last
 records before the cut became 1,205 zero bytes (written to the page cache, never to the card).
@@ -774,6 +789,18 @@ exactly as written, and `upload.mjs` reports the gap. `agent.py` now fsyncs ever
 
 **What breaks if 0G is removed:** the payload can no longer make its checkpoint decisions; it
 holds a safe state until 0G is back.
+
+**Live on the payload after the switch to decision models** (run `retest-1106`, Pi journal):
+
+| Checkpoint | 0G answer | Action on the payload | Request ID |
+|---|---|---|---|
+| thermal | Vela `continue` P = 0.999 (gate 0.8) | camera running | `0c4cbb83-28ca-4ab5-a0de-0b2a2b81cc01` |
+| vision | qwen3-vl-plus `drop` "Frame is completely black"; Laya P(empty) = 0.96 | frame deleted | `7c943d639351c934`; laya `bf48904b-3d0d-4dc2-bc0c-21de72c649ba` |
+| burst | Vela `start_recovery` P = 0.924 (gate 0.8) | phase = descent, "0G: recovery" on the beacon | `0302ff40-ecab-46e2-bd4f-0d2725c85264` |
+
+A caution measured on the way: 338 m below the peak at -1.1 m/s, Vela still gave
+`start_recovery` 0.89. The checkpoint only fires 300 m below the peak; a real float would need
+a longer altitude history in the state or a higher gate.
 
 ### Hedera: x402, AI Agents That Pay
 
