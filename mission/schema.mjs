@@ -50,6 +50,9 @@ export const Insight = defineSchema("boscon.hab.insight", {
   headline:   str(),            // <= 128 bytes
   query:      bytes(),          // the Arkiv filter the analysis read, as text
   body:       bytes(),          // full answer + inputs digest, JSON
+  guardModel: str().indexed(),  // the 0G decision model that checked the claims (vela-2.0-9b)
+  guardVerdict: str().indexed(), // "supported" | "flagged": did it mark claims the Arkiv data does not support
+  guardRequestId: str(),        // its 0G request id
 })
 
 // A public balloon seen on SondeHub (radiosonde or amateur), one entity per position snapshot.
