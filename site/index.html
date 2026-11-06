@@ -29,9 +29,17 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
     <label class="sr" for="session">Session</label>
     <select id="session" class="select"><option value="flight">31 Oct 2026 flight log</option></select>
   </div>
-  <dl class="metrics mono" id="metrics" aria-label="Session metrics"></dl>
+  <nav class="nav" aria-label="Sections">
+    <a href="#/mission" data-p="mission">Mission</a>
+    <a href="#/protocol" data-p="protocol">Protocol</a>
+    <a href="#/flights" data-p="flights">Flights</a>
+    <span class="nav-sep" aria-hidden="true"></span>
+    <a href="#/zerog" data-p="zerog">0G</a>
+    <a href="#/hedera" data-p="hedera">Hedera</a>
+    <a href="#/arkiv" data-p="arkiv">Arkiv</a>
+  </nav>
   <ul class="links" id="links" aria-label="Link health">
-    <li data-k="radio"><i></i>Radio</li><li data-k="payload"><i></i>Payload</li><li data-k="arkiv"><i></i>Arkiv</li><li data-k="hedera"><i></i>Hedera</li><li data-k="zerog"><i></i>0G</li>
+    <li data-k="radio" data-go="protocol"><i></i>Radio</li><li data-k="payload" data-go="zerog"><i></i>Payload</li><li data-k="arkiv" data-go="arkiv"><i></i>Arkiv</li><li data-k="hedera" data-go="hedera"><i></i>Hedera</li><li data-k="zerog" data-go="zerog"><i></i>0G</li>
   </ul>
   <div class="clock mono" id="clock" aria-label="UTC time">--:--:-- UTC</div>
   <button class="icon-btn" id="theme" type="button" aria-label="Switch to light theme" title="Theme">
@@ -70,32 +78,11 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
       <button role="tab" id="v-map" aria-selected="true" data-v="map">Map</button>
       <button role="tab" id="v-flow" aria-selected="false" data-v="flow">System flow</button>
       <button role="tab" id="v-split" aria-selected="false" data-v="split">Split</button>
-      <button role="tab" id="v-proto" aria-selected="false" data-v="protocol">Protocol</button>
       <span class="viewbar-note" id="viewbar-note"></span>
+      <dl class="metrics mono" id="metrics" aria-label="Session metrics"></dl>
     </div>
     <div class="center" id="center" data-view="map">
     <div class="flowwrap" id="flowwrap" aria-label="Live system flow"><svg id="flow-svg" aria-hidden="true"></svg><div id="flow-nodes"></div></div>
-    <div class="protowrap" id="protowrap" aria-label="Frames as the ground receiver hears them">
-      <div class="pr-air">
-        <div class="pr-end"><span class="pr-node" id="pr-tx"></span><div><b>Beacon</b><small>payload · Heltec V3 · Ed25519</small></div></div>
-        <div class="pr-lane" id="pr-lane"><span class="pr-lane-label mono">LoRa 866.1 MHz · SF9 · 125 kHz</span><span class="pr-lane-note mono" id="pr-lane-note">waiting for the next frame</span></div>
-        <div class="pr-end right"><div><b>Ground receiver</b><small>Heltec V3 · USB · verifier</small></div><span class="pr-node" id="pr-rx"></span></div>
-      </div>
-      <section class="pr-card">
-        <header><b id="pr-ftitle">Frame</b><span class="mono" id="pr-fmeta"></span></header>
-        <div class="pr-bytes mono" id="pr-bytes" aria-label="Frame bytes"></div>
-        <div class="pr-fields" id="pr-fields"></div>
-      </section>
-      <section class="pr-card">
-        <header><b id="pr-btitle">Batch</b><span class="mono" id="pr-bmeta"></span></header>
-        <div class="pr-slots" id="pr-slots"></div>
-        <div class="pr-proof mono" id="pr-proof"></div>
-      </section>
-      <section class="pr-card pr-hist-card">
-        <header><b>Signed batches</b><span class="mono">checked again in this browser · SHA-256 and Ed25519 by WebCrypto</span></header>
-        <ol class="pr-hist" id="pr-hist"></ol>
-      </section>
-    </div>
     <div class="mapwrap">
       <div id="map" aria-label="Map of the flight"></div>
       <div class="maptools" role="toolbar" aria-label="Map">
@@ -155,14 +142,85 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
     <header class="ph tabs" role="tablist" aria-label="Inspector">
       <button role="tab" aria-selected="true" aria-controls="i-fix" id="it-fix">Fix</button>
       <button role="tab" aria-selected="false" aria-controls="i-pred" id="it-pred">Prediction</button>
-      <button role="tab" aria-selected="false" aria-controls="i-arkiv" id="it-arkiv">Arkiv</button>
-      <button role="tab" aria-selected="false" aria-controls="i-ledger" id="it-ledger">Ledger</button>
     </header>
     <div class="pane" id="i-fix" role="tabpanel" aria-labelledby="it-fix"></div>
     <div class="pane" id="i-pred" role="tabpanel" aria-labelledby="it-pred" hidden></div>
-    <div class="pane" id="i-arkiv" role="tabpanel" aria-labelledby="it-arkiv" hidden>
-      <p class="note">Every frame, wind measurement and prediction is an Arkiv entity with indexed attributes. These queries run from this browser against Arkiv Rabdi.</p>
-      <p class="status" id="ark-status" role="status">Not connected</p>
+  </aside>
+</main>
+
+<section class="pg" id="pg-protocol" data-page="protocol" aria-label="Protocol">
+  <div class="pg-in wide">
+    <header class="pg-h"><div><h1>Protocol</h1><p>Every frame as the ground receiver hears it. Six data frames, then one signature frame that reveals the salt: your browser recomputes each hash and checks the beacon's Ed25519 signature itself.</p></div>
+      <div class="pg-aside mono" id="pr-aside"></div></header>
+    <div class="protowrap on" id="protowrap" aria-label="Frames as the ground receiver hears them">
+      <div class="pr-air">
+        <div class="pr-end"><span class="pr-node" id="pr-tx"></span><div><b>Beacon</b><small>payload · Heltec V3 · Ed25519</small></div></div>
+        <div class="pr-lane" id="pr-lane"><span class="pr-lane-label mono">LoRa 866.1 MHz · SF9 · 125 kHz</span><span class="pr-lane-note mono" id="pr-lane-note">waiting for the next frame</span></div>
+        <div class="pr-end right"><div><b>Ground receiver</b><small>Heltec V3 · USB · verifier</small></div><span class="pr-node" id="pr-rx"></span></div>
+      </div>
+      <section class="pr-card">
+        <header><b id="pr-ftitle">Frame</b><span class="mono" id="pr-fmeta"></span></header>
+        <div class="pr-bytes mono" id="pr-bytes" aria-label="Frame bytes"></div>
+        <div class="pr-fields" id="pr-fields"></div>
+      </section>
+      <section class="pr-card">
+        <header><b id="pr-btitle">Batch</b><span class="mono" id="pr-bmeta"></span></header>
+        <div class="pr-slots" id="pr-slots"></div>
+        <div class="pr-proof mono" id="pr-proof"></div>
+      </section>
+      <section class="pr-card pr-hist-card">
+        <header><b>Signed batches</b><span class="mono">checked again in this browser · SHA-256 and Ed25519 by WebCrypto</span></header>
+        <ol class="pr-hist" id="pr-hist"></ol>
+      </section>
+    </div>
+  </div>
+</section>
+
+<section class="pg" id="pg-flights" data-page="flights" aria-label="Flights">
+  <div class="pg-in wide">
+    <header class="pg-h"><div><h1>Flights</h1><p>HAB-1's flight next to the model's simulations of it, a new forecast for launching again from the same pad, and the balloons flying around India this week (SondeHub, live).</p></div>
+      <div class="pg-aside mono" id="fl-aside"></div></header>
+    <div class="fl-grid">
+      <div class="card fl-list"><header><b>Flights</b><span class="mono" id="fl-count"></span></header><div id="fl-groups"></div></div>
+      <div class="card fl-mapcard"><div id="fl-map" aria-label="Map of the flights"></div><div class="fl-legend" aria-hidden="true"><span><i class="lg-track"></i>HAB-1, measured</span><span><i class="lg-pred"></i>Simulated (Tawhiri)</span><span><i class="lg-pub"></i>Public flights</span></div></div>
+    </div>
+    <div class="card"><header><b>Compare</b><span class="mono">distances are great-circle, from first to last fix</span></header><div class="tbl-wrap"><table class="grid" id="fl-table"></table></div></div>
+  </div>
+</section>
+
+<section class="pg" id="pg-zerog" data-page="zerog" aria-label="0G">
+  <div class="pg-in">
+    <header class="pg-h"><div><h1>0G</h1><p>The payload asks 0G before every consequential action, in a TEE, and signs what it did. <b>Without 0G the payload cannot decide:</b> it holds a safe state and logs a safe stop, and no decision is ever made up.</p></div>
+      <div class="pg-aside" id="zg-links"></div></header>
+    <dl class="kpis" id="zg-kpis"></dl>
+    <div class="card"><header><b>How the payload decides</b><span class="mono">POST /v1/decisions · calibrated probabilities · verify_tee</span></header><div class="tbl-wrap"><table class="grid" id="zg-models"></table></div></div>
+    <div class="card"><header><b>Decisions</b><span class="mono" id="zg-dec-note"></span></header><div class="tbl-wrap"><table class="grid" id="zg-decisions"></table></div></div>
+    <div class="card"><header><b>Check the episode log yourself</b><span class="mono">0G Chain · 0G Storage · Ed25519</span></header>
+      <div class="card-body"><p class="lede">The Pi signs every decision with its own key. The log goes to 0G Storage and its root to the EpisodeRegistry contract, which also holds the Pi's public key. This reads the contract from 0G Chain and checks every signature in the log, here in your browser.</p>
+        <button class="btn primary" id="zg-verify" type="button">Verify in this browser</button><ol class="steps mono" id="zg-steps"></ol></div></div>
+    <div class="card"><header><b>0G analyses of the Arkiv data</b><span class="mono">0gm-1.0 writes · Vela marks unsupported claims · stored on Arkiv</span></header><div class="card-body" id="zg-ins"><p class="status">Reading insights from Arkiv…</p></div></div>
+  </div>
+</section>
+
+<section class="pg" id="pg-hedera" data-page="hedera" aria-label="Hedera">
+  <div class="pg-in">
+    <header class="pg-h"><div><h1>Hedera</h1><p>Wind measured on the balloon is sold with x402. An agent pays per reading over HTTP; two radio boards pay each other over LoRa with no internet, and settle on Hedera when the frames come down. Every sale is written to an HCS audit topic. Everything below is read live from the Hedera mirror node.</p></div>
+      <div class="pg-aside" id="hb-links"></div></header>
+    <dl class="kpis" id="hb-kpis"></dl>
+    <div class="card"><header><b>Three ways to pay</b><span class="mono">each one settled on Hedera testnet</span></header><div class="ways" id="hb-ways"></div></div>
+    <div class="card"><header><b>Audit trail</b><span class="mono" id="hb-topic"></span></header><div class="tbl-wrap"><table class="grid" id="hb-audit"></table></div></div>
+    <div class="card"><header><b>Accounts</b><span class="mono">balances live from the mirror node</span></header><div class="tbl-wrap"><table class="grid" id="hb-accounts"></table></div></div>
+  </div>
+</section>
+
+<section class="pg" id="pg-arkiv" data-page="arkiv" aria-label="Arkiv">
+  <div class="pg-in">
+    <header class="pg-h"><div><h1>Arkiv</h1><p>Every verified frame, measured wind, prediction, public balloon fix and 0G insight is an Arkiv entity with indexed attributes, owned by the wallet that wrote it. These queries run from your browser against Arkiv Rabdi, filtered to this deployment's wallets.</p></div>
+      <div class="pg-aside" id="ak-links"></div></header>
+    <div class="ak-grid">
+      <div class="card"><header><b>Query</b><span class="mono">attribute filters · ownedBy</span></header><div class="card-body ark-q">
+
+            <p class="status" id="ark-status" role="status">Not connected</p>
       <dl class="stats" id="ark-counts"></dl>
       <h3 class="sub">Query</h3>
       <div class="presets" id="presets" role="group" aria-label="Example queries"></div>
@@ -175,17 +233,21 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
         <label class="q-wind">Alt to m<input class="input mono" id="q-altmax" type="number" step="500"></label>
         <label class="q-pred" hidden>Kind<select class="select" id="q-kind"><option value="">any</option><option>inflight</option><option>hindcast</option><option>forecast</option></select></label>
         <label class="q-pred" hidden>Miss ≤ km<input class="input mono" id="q-err" type="number" step="0.1"></label>
-        <label class="q-packet" hidden>Verdict<select class="select" id="q-verdict"><option>verified</option><option>fake</option><option>bad_signature</option><option>replay</option><option>unverified</option><option>conflict</option></select></label>
+        <label class="q-packet" hidden>Verdict<select class="select" id="q-verdict"><option>verified</option><option>fake</option><option>bad_signature</option><option>replay</option><option>unverified</option><option>conflict</option><option>unsigned</option></select></label>
         <label class="q-packet" hidden>Run<input class="input mono" id="q-run" type="text" placeholder="any"></label>
       </div>
       <pre class="code" id="q-code"></pre>
       <button class="btn primary" id="q-go" type="button">Run query</button>
       <p class="status" id="q-status" role="status"></p>
       <table class="grid compact" id="q-results"></table>
+          </div></div>
+      <div class="ak-side">
+        <div class="card"><header><b>Entity types</b><span class="mono">indexed attributes</span></header><div class="card-body" id="ak-types"></div></div>
+        <div class="card"><header><b>Written this session</b><span class="mono" id="ak-sess-note"></span></header><div class="card-body" id="ak-session"></div></div>
+      </div>
     </div>
-    <div class="pane" id="i-ledger" role="tabpanel" aria-labelledby="it-ledger" hidden></div>
-  </aside>
-</main>
+  </div>
+</section>
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
