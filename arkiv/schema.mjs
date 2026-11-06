@@ -39,6 +39,7 @@ export const VERDICTS = {
   "FAKE REJECTED": "fake",
   "REJECTED bad signature": "bad_signature",
   "ACCEPTED unverified": "unverified",
+  "UNSIGNED signature not heard": "unsigned",
   "UNSIGNED beacon restarted": "unsigned",
   "REPLAY REJECTED": "replay",
   "CONFLICT REJECTED": "conflict",

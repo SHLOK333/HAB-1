@@ -128,8 +128,8 @@ class Verifier:
                 if not self.pending[seq]:
                     del self.pending[seq]
                 for fb, d, frssi, fsnr, _ in stale:
-                    results.append((seq, "UNSIGNED beacon restarted"))
-                    self.log("verdict", seq=seq, verdict="UNSIGNED beacon restarted", hex=fb.hex(), rssi=frssi, snr=fsnr,
+                    results.append((seq, "UNSIGNED signature not heard"))
+                    self.log("verdict", seq=seq, verdict="UNSIGNED signature not heard", hex=fb.hex(), rssi=frssi, snr=fsnr,
                              flight_s=d["flight_s"], lat=d["lat"], lon=d["lon"], alt_m=d["alt_m"], beacon_key=self.pubkey_hex,
                              live_hpa=d["live_hpa"], live_c=d["live_c"], live_src=d["live_src"])
         for i, h in enumerate(hashes):
