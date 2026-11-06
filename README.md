@@ -11,6 +11,23 @@ Partner tracks: **0G** (Physical AI), **Hedera** (x402 agents that pay), **Arkiv
 > given), **datasheet**, or **assumed**. Things that are not done are listed in
 > [What is not done](#what-is-not-done).
 
+### For judges: where to look
+
+The ground-station console has one page per track. Each page reads public sources and lets
+you check the claims yourself, in your browser:
+
+| Page | What you can check there |
+|---|---|
+| **0G** (`#/zerog`) | how each payload decision is made (Vela 2.0 9B, Laya, gates); every signed decision with its 0G request ID; **Verify in this browser** reads the Pi's key and the latest log root from EpisodeRegistry on 0G Chain and checks all the log's Ed25519 signatures |
+| **Hedera** (`#/hedera`) | the three ways the balloon's wind is paid for (x402 over HTTP, radio voucher, x402 over LoRa); every sale on the HCS audit topic and the account balances, read live from the mirror node |
+| **Arkiv** (`#/arkiv`) | attribute-filter queries against Arkiv from your browser, the six entity types and their indexed attributes, and the batches written this session |
+| **Protocol** (`#/protocol`) | each LoRa frame as it is received, byte by byte; the browser recomputes the salted hashes and checks the beacon's signature itself |
+| **Flights** (`#/flights`) | HAB-1 next to Tawhiri simulations of it, a new forecast for launching again, and the balloons over India this week (SondeHub) |
+
+Live, the console is served by the ground-station laptop (`./demo.sh start`, then
+`http://localhost:8090`). Without the hardware, serve `site/` with any static server and the
+same pages open in Archive mode.
+
 ---
 
 ## Contents
@@ -258,6 +275,18 @@ it.
 | The HAB-1 hardware: Raspberry Pi 5, two Heltec WiFi LoRa 32 V3 boards, NEO-M9N GPS, MS5611 and BMP280 barometers, C270 and Lenovo cameras, the payload harness | Firmware for both Heltecs (`firmware/hab_node`) and the radio probe (`probes/`) |
 | The flight data of 31 Oct 2026 (the Pi's 1 Hz log), used here only as **replay input** | Ground verifier, Arkiv publisher, public map, Hedera x402 endpoint and agent, Pi decision loop and sensor drivers, 0G contract and uploader, tools |
 | Flight footage, used only as background in the pitch | |
+
+**Related work, and what is new.** The radio protocol's security idea is not new and we do not
+claim it is: one signature covering several messages is signature amortisation (Gennaro and
+Rohatgi, "How to sign digital streams", 1997; Wong and Lam, 1999), and revealing a secret
+after the messages it protects is the idea of TESLA (Perrig et al., 2000), which Galileo's
+OSNMA uses today to authenticate satellite navigation broadcasts. What was designed here is
+its form for this link: 28-byte data frames, a 100-byte SIG frame per 6 frames, 4-byte hashes
+made safe by revealing the salt only in the SIG frame, a boot counter against replays, all
+within 2.28 % of a 2.5 % duty limit; and the payments on top of it. We searched for prior
+x402 over LoRa (6 Nov 2026) and found none; the closest was a signed agent payment sent over
+868 MHz LoRa between two Heltec boards with another protocol (MCPS), not x402. A search can
+miss work, so we say "we found no prior x402 over LoRa", not "first".
 
 No code from the HAB-1 flight software (its firmware, its Pi daemons, the Kapex payload
 computer) is used. The Pi's barometer drivers were written again here from the datasheets.
@@ -973,6 +1002,20 @@ What a payload has in flight: no Wi-Fi, no internet. The Pi's Wi-Fi was switched
 The beacon and the ground board never use Wi-Fi for the radio link: on both, Wi-Fi only
 mirrors the log and takes commands on the bench (port 2323). The radio sale above (voucher,
 delivery, refusals) ran over LoRa alone; only the settlement, on the ground, used the internet.
+
+### Verifier: frames left over from before a beacon restart (found 6 Nov 2026)
+
+The payload box was power-cycled in the middle of a batch (beacon boot 11, seqs 192 to 195
+heard, their SIG frame never sent). After the restart the beacon counted up again from 0
+(boot 12), and when boot 12 reached seq 192 its SIG frame did not match the four old frames,
+so the verifier logged them **FAKE REJECTED** and 4 Packet entities went to Arkiv as
+`verdict=fake`. Nothing unsigned was accepted, but the label was wrong: they were genuine,
+unsigned frames. A batch spans 7 slots (84 s), so the verifier now drops any pending frame
+heard more than 150 s before a valid SIG frame as **UNSIGNED** (`verdict=unsigned` on Arkiv),
+and the Protocol page does the same. A forger cannot use this: a fake must be sent now, so it
+is never that old, and a replayed recording of a real frame is also heard now. Replaying the
+logged bytes of that batch through the new verifier: 6 VERIFIED, 4 UNSIGNED, and a freshly
+forged frame for seq 194 FAKE REJECTED.
 
 ### Radio sale between the two boards (run `retest-1106`, 6 Nov 2026)
 

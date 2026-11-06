@@ -75,12 +75,19 @@ Radio sales need a one-time setup (already done for the boards we have): with th
 stopped, `./demo.sh radio-setup`. It makes the buyer's Hedera account from the ground Heltec's
 own key and has the board sign the allowance.
 
+## The console, in one line per page
+
+Top bar: **Mission** (live map, system flow, transactions, operations) · **Protocol** (each
+frame as it is received) · **Flights** (ours, simulated, around India) · **0G** · **Hedera** ·
+**Arkiv**. Send each partner's judges straight to their page: `#/zerog`, `#/hedera`, `#/arkiv`.
+The coloured dots on the right open the matching page.
+
 ## The demo, step by step
 
 | Pitch moment | Do | Show |
 |---|---|---|
 | The real flight, replayed | nothing; wait one batch (about 84 s) | map track grows in green; `./demo.sh logs verifier` shows VERIFIED |
-| Watch the protocol | console → **Protocol** tab (or `http://localhost:8090/?view=protocol`) | each frame crosses the LoRa link and arrives byte by byte; every 7th slot the SIG frame reveals the salt and the browser re-checks each hash and the Ed25519 signature itself |
+| Watch the protocol | console → **Protocol** in the top bar (`http://localhost:8090/#/protocol`) | each frame crosses the LoRa link and arrives byte by byte; every 7th slot the SIG frame reveals the salt and the browser re-checks each hash and the Ed25519 signature itself |
 | A fake frame | press **PRG** on the beacon, or `./demo.sh attack` | verifier: FAKE REJECTED; a red dot on the map after the next batch |
 | What HAB-1 would have done | `./demo.sh noverify`, then press PRG within 30 s | the fake is ACCEPTED. Afterwards `./demo.sh stop && ./demo.sh start demo-final-2` |
 | 0G decides | wait for the replay to pass burst (about every 6 min); `./demo.sh pi-log` | `[burst] start_recovery ... vela-2.0-9b: P(start_recovery) = 0.92, threshold 0.8` with a request ID; "0G: recovery" on the beacon screen; `[vision] drop -> deleted (laya P(empty) = 0.9)` when Laya confirms a frame is empty. In the console: Ledger tab, each 0G analysis shows "claims checked by vela-2.0-9b" |
