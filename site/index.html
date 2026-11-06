@@ -53,10 +53,6 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
       <header class="ph"><h2>Systems</h2><span class="ph-note" id="sys-note">offline</span></header>
       <div id="systems"></div>
     </section>
-    <section class="panel runbook">
-      <header class="ph"><h2>Demo runbook</h2><span class="ph-note mono" id="rb-note">0 / 8</span></header>
-      <ol id="runbook"></ol>
-    </section>
     <section class="panel ops">
       <header class="ph"><h2>Operations</h2><span class="ph-note" id="ops-note"></span></header>
       <div class="ops-body">
@@ -94,6 +90,8 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
         <button class="tool on" id="t-3d" type="button" aria-pressed="true">3D</button>
         <button class="tool on" id="t-follow" type="button" aria-pressed="true">Follow</button>
         <button class="tool" id="t-fit" type="button">Fit</button>
+        <button class="tool flightbtn" id="t-flight" type="button" aria-expanded="false" aria-controls="flightpop" title="Choose the flight the real beacon transmits">Flight: HAB-1 ▾</button>
+        <div class="pop flightpop" id="flightpop" hidden></div>
         <button class="tool" id="t-layers" type="button" aria-expanded="false" aria-controls="layers">Layers</button>
         <div class="pop" id="layers" hidden>
           <label><input type="checkbox" data-l="archive" checked> 31 Oct flight track</label>
@@ -123,9 +121,7 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
         <button role="tab" aria-selected="false" aria-controls="d-log" id="dt-log">Event log <span class="count mono" id="log-count">0</span></button>
         <button role="tab" aria-selected="false" aria-controls="d-plots" id="dt-plots">Plots</button>
         <button role="tab" aria-selected="false" aria-controls="d-frames" id="dt-frames">Frames</button>
-        <div class="ph-tools" id="log-filters" role="group" aria-label="Log sources">
-          <button class="chip on" data-src="radio">Radio</button><button class="chip on" data-src="payload">Payload</button><button class="chip on" data-src="arkiv">Arkiv</button><button class="chip on" data-src="hedera">Hedera</button><button class="chip on" data-src="model">Model</button><button class="chip on" data-src="ops">Ops</button>
-        </div>
+
       </header>
       <div class="pane txpane" id="d-tx" role="tabpanel" aria-labelledby="dt-tx">
         <div class="txsum mono" id="tx-sum"></div>
@@ -155,7 +151,7 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
 
 <section class="pg" id="pg-protocol" data-page="protocol" aria-label="Protocol">
   <div class="pg-in wide">
-    <header class="pg-h"><div><h1>Protocol</h1><p>Every frame as the ground receiver hears it. Six data frames, then one signature frame that reveals the salt: your browser recomputes each hash and checks the beacon's Ed25519 signature itself.</p></div>
+    <header class="pg-h"><div><h1>Protocol</h1><p>Each frame as it is received. Every 7th frame reveals the salt, and your browser checks the hashes and the beacon's signature itself.</p></div>
       <div class="pg-aside mono" id="pr-aside"></div></header>
     <div class="protowrap on" id="protowrap" aria-label="Frames as the ground receiver hears them">
       <div class="pr-air">
@@ -183,7 +179,7 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
 
 <section class="pg" id="pg-flights" data-page="flights" aria-label="Flights">
   <div class="pg-in wide">
-    <header class="pg-h"><div><h1>Flights</h1><p>HAB-1's flight next to the model's simulations of it, a new forecast for launching again from the same pad, and the balloons flying around India this week (SondeHub, live).</p></div>
+    <header class="pg-h"><div><h1>Flights</h1><p>HAB-1, Tawhiri simulations and public balloons over India. Press <b>Fly</b> on any of them and the real beacon transmits it.</p></div>
       <div class="pg-aside mono" id="fl-aside"></div></header>
     <div class="fl-grid">
       <div class="card fl-list"><header><b>Flights</b><span class="mono" id="fl-count"></span></header><div id="fl-groups"></div></div>
@@ -223,16 +219,16 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
 
 <section class="pg" id="pg-zerog" data-page="zerog" aria-label="0G">
   <div class="pg-in">
-    <header class="pg-h"><div><h1>0G</h1><p>The payload asks 0G before every consequential action, in a TEE, and signs what it did. <b>Without 0G the payload cannot decide:</b> it holds a safe state and logs a safe stop, and no decision is ever made up.</p></div>
+    <header class="pg-h"><div><h1>0G</h1><p>The payload asks 0G before each important action and signs what it did. <b>Without 0G it cannot decide:</b> it holds a safe state and never makes a decision up.</p></div>
       <div class="pg-aside" id="zg-links"></div></header>
     <dl class="kpis" id="zg-kpis"></dl>
     <div class="card"><header><b>How the payload decides</b><span class="mono">POST /v1/decisions · calibrated probabilities · verify_tee</span></header><div class="tbl-wrap"><table class="grid" id="zg-models"></table></div></div>
     <div class="card"><header><b>Decisions</b><span class="mono" id="zg-dec-note"></span></header><div class="tbl-wrap"><table class="grid" id="zg-decisions"></table></div></div>
     <div class="card"><header><b>Check the episode log yourself</b><span class="mono">0G Chain · 0G Storage · Ed25519</span></header>
-      <div class="card-body"><p class="lede">The Pi signs every decision with its own key. The log goes to 0G Storage and its root to the EpisodeRegistry contract, which also holds the Pi's public key. This reads the contract from 0G Chain and checks every signature in the log, here in your browser.</p>
+      <div class="card-body"><p class="lede">Reads the Pi's key and the log's root from the contract on 0G Chain, then checks every signature in the log, in your browser.</p>
         <button class="btn primary" id="zg-verify" type="button">Verify in this browser</button><ol class="steps mono" id="zg-steps"></ol></div></div>
     <div class="card"><header><b>Proof of which model decided</b><span class="mono">TEE signatures, checked against 0G mainnet</span></header>
-      <div class="card-body"><p class="lede">Each answer from a sealed 0G model is signed inside its enclave. The enclave's signing key, the model and the software image are registered on 0G mainnet, so anyone can check that a payload decision came from that model in that enclave, without trusting the Router or us. The ground station collects each proof while the provider still holds the signature (about 20 minutes).</p>
+      <div class="card-body"><p class="lede">Each sealed 0G answer is signed inside its enclave, whose key is registered on 0G mainnet: proof that the decision came from that model, without trusting us.</p>
         <button class="btn primary" id="zg-proof-check" type="button" disabled>Check the latest proof in this browser</button><ol class="steps mono" id="zg-proof-steps"></ol></div>
       <div class="tbl-wrap"><table class="grid" id="zg-proofs"></table></div></div>
     <div class="card"><header><b>0G analyses of the Arkiv data</b><span class="mono">0gm-1.0 writes · Vela marks unsupported claims · stored on Arkiv</span></header><div class="card-body" id="zg-ins"><p class="status">Reading insights from Arkiv…</p></div></div>
@@ -241,7 +237,7 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
 
 <section class="pg" id="pg-hedera" data-page="hedera" aria-label="Hedera">
   <div class="pg-in">
-    <header class="pg-h"><div><h1>Hedera</h1><p>Wind measured on the balloon is sold with x402. An agent pays per reading over HTTP; two radio boards pay each other over LoRa with no internet, and settle on Hedera when the frames come down. Every sale is written to an HCS audit topic. Everything below is read live from the Hedera mirror node.</p></div>
+    <header class="pg-h"><div><h1>Hedera</h1><p>Balloon data sold with x402: agents pay over HTTP, and two radios pay each other over LoRa, settled when the frames reach the ground. Read live from the Hedera mirror node.</p></div>
       <div class="pg-aside" id="hb-links"></div></header>
     <dl class="kpis" id="hb-kpis"></dl>
     <div class="card"><header><b>Three ways to pay</b><span class="mono">each one settled on Hedera testnet</span></header><div class="ways" id="hb-ways"></div></div>
@@ -252,7 +248,7 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
 
 <section class="pg" id="pg-arkiv" data-page="arkiv" aria-label="Arkiv">
   <div class="pg-in">
-    <header class="pg-h"><div><h1>Arkiv</h1><p>Every verified frame, measured wind, prediction, public balloon fix and 0G insight is an Arkiv entity with indexed attributes, owned by the wallet that wrote it. These queries run from your browser against Arkiv Rabdi, filtered to this deployment's wallets.</p></div>
+    <header class="pg-h"><div><h1>Arkiv</h1><p>Every frame, wind, prediction and 0G insight is an Arkiv entity anyone can query. These queries run from your browser.</p></div>
       <div class="pg-aside" id="ak-links"></div></header>
     <div class="ak-grid">
       <div class="card"><header><b>Query</b><span class="mono">attribute filters · ownedBy</span></header><div class="card-body ark-q">

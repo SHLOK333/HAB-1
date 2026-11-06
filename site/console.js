@@ -106,7 +106,10 @@ map.addControl(overlay)
 function layers() {
   const L = [], live = S.mode === "live", t = S.t, lb = LABEL()
   const ghost = live || S.session !== "flight"
-  if (S.layers.archive) {
+  const custom = S.flightNow && !S.flightNow.builtin
+  if (custom && S.flightNow.track?.length) L.push(new deck.PathLayer({ id: "flight-plan", data: [S.flightNow.track], getPath: d => d, getColor: [...C.track, 90], widthUnits: "pixels", getWidth: 1.5,
+    getDashArray: [4, 4], dashJustified: true, extensions: [new deck.PathStyleExtension({ dash: true })] }))
+  if (S.layers.archive && !custom) {
     L.push(new deck.TripsLayer({ id: "archive", data: TRIP, getPath: d => d.path, getTimestamps: d => d.ts, currentTime: ghost ? T1 : t, trailLength: 1e7, fadeTrail: false,
       getColor: ghost ? [...C["text-3"], 150] : C.track, widthUnits: "pixels", getWidth: ghost ? 1.5 : 2.6, capRounded: true, jointRounded: true }))
     if (!ghost) L.push(new deck.LineLayer({ id: "curtain", data: SAMPLES.filter((s, i) => s.flightS <= t && i % 4 === 0), getSourcePosition: d => [d.lon, d.lat, 0], getTargetPosition: d => [d.lon, d.lat, d.altM], getColor: [...C["text-3"], 70], getWidth: 1 }))
@@ -143,7 +146,9 @@ function layers() {
       sizeUnits: "meters", sizeMinPixels: 8, getSize: d => 900 + d.speed * 90, getColor: [...C.measured, 190] }))
   }
   // fixed marks
-  const marks = [{ p: [F.pad.lon, F.pad.lat, 0], text: `Pad · ${pos(F.pad.lat, F.pad.lon)}`, c: C.text }, { p: [F.landing.lon, F.landing.lat, 0], text: `Landed ${hms(RELEASE + LAND_T * 1000)} UTC`, c: C.text }]
+  const ft = custom ? S.flightNow.track : null
+  const marks = ft?.length ? [{ p: [ft[0][0], ft[0][1], 0], text: `Launch · ${S.flightNow.name}`, c: C.text }, { p: [ft.at(-1)[0], ft.at(-1)[1], 0], text: "Lands", c: C.text }]
+    : [{ p: [F.pad.lon, F.pad.lat, 0], text: `Pad · ${pos(F.pad.lat, F.pad.lon)}`, c: C.text }, { p: [F.landing.lon, F.landing.lat, 0], text: `Landed ${hms(RELEASE + LAND_T * 1000)} UTC`, c: C.text }]
   L.push(new deck.ScatterplotLayer({ id: "marks", data: marks, getPosition: d => d.p, radiusUnits: "pixels", getRadius: 5, getFillColor: C.s1, stroked: true, getLineColor: C.text, lineWidthUnits: "pixels", getLineWidth: 2 }))
   L.push(new deck.TextLayer({ id: "marks-label", data: marks, getPosition: d => d.p, getText: d => d.text, ...lb, getTextAnchor: "end", getPixelOffset: [-12, 0] }))
   // the balloon now
@@ -232,7 +237,7 @@ function renderLog() {
     : `<li class="empty">${S.mode === "live" ? "Waiting for the ground station…" : "No events in this view."}</li>`
 }
 $("log").addEventListener("click", e => { const li = e.target.closest("li[data-seq]"); if (li && li.dataset.seq !== "") select(+li.dataset.seq) })
-for (const c of $("log-filters").querySelectorAll(".chip")) c.onclick = () => { c.classList.toggle("on"); c.classList.contains("on") ? filters.add(c.dataset.src) : filters.delete(c.dataset.src); renderLog() }
+for (const c of $("log-filters")?.querySelectorAll(".chip") ?? []) c.onclick = () => { c.classList.toggle("on"); c.classList.contains("on") ? filters.add(c.dataset.src) : filters.delete(c.dataset.src); renderLog() }
 
 // ---------------------------------------------------------------- tabs
 function tabs(listSel, onShow) {
@@ -306,9 +311,8 @@ function renderFix() {
       <div class="readouts"><div class="ro"><span>Altitude</span><b>${fmt(f.altM)}<small>m</small></b></div><div class="ro"><span>Vertical</span><b>${vz == null ? "—" : `${vz >= 0 ? "+" : "−"}${Math.abs(vz).toFixed(1)}`}<small>m/s</small></b></div>
       <div class="ro"><span>Flight time</span><b>${tPlus(f.flightS).slice(1)}</b></div><div class="ro"><span>Link</span><b>${f.rssi}<small>dBm · ${f.snr} dB</small></b></div></div>
       ${kvs([["Position", pos(f.lat, f.lon)], f.press != null && ["Replayed pressure", `${f.press} hPa · ${f.temp} °C`], f.livePa && ["Payload Pi barometer", `${f.livePa.toFixed(1)} hPa · ${f.liveC?.toFixed(2)} °C`, "meas"],
-        ["Beacon key", short(f.beaconKey ?? X.keys.beacon)], sig && ["Batch signature", `${sig.valid ? "valid" : "INVALID"} · boot ${sig.boot} · seq ${sig.first}–${sig.first + sig.count - 1}`, sig.valid ? "ok" : "bad"],
-        sig?.replay && ["Replay check", "older than accepted batch", "bad"], batch && ["On Arkiv", `tx ${short(batch.tx)}`, "ok"], f.heardAt && ["Heard", `${hms(f.heardAt)} UTC`], f.run && ["Arkiv run", esc(f.run)]])}
-      ${f.hex ? `<h3 class="sub">Frame as received (${f.hex.length / 2} bytes)</h3><pre class="code">${f.hex.match(/.{1,2}/g).join(" ")}</pre>` : ""}`
+sig && ["Batch signature", `${sig.valid ? "valid" : "INVALID"} · boot ${sig.boot} · seq ${sig.first}–${sig.first + sig.count - 1}`, sig.valid ? "ok" : "bad"],
+        sig?.replay && ["Replay check", "older than accepted batch", "bad"], batch && ["On Arkiv", `tx ${short(batch.tx)}`, "ok"], f.heardAt && ["Heard", `${hms(f.heardAt)} UTC`], f.run && ["Arkiv run", esc(f.run)]])}`
     $("unsel")?.addEventListener("click", e => { e.preventDefault(); S.selected = null; renderLog(); draw(); renderFix() })
   } else {
     const s = flightState(S.t)
@@ -450,6 +454,7 @@ function connectLive() {
     else if (data.kind === "checkpoint") { S.pi.checkpoints.push(data); flowPacket("pi-zerog", "caution", () => flash("zerog", data.safeStop ? "warn" : "ok")); log("payload", `0G checkpoint [${esc(data.name)}] · ${data.safeStop ? `<span class="warn">${esc(data.text)}</span>` : esc(data.text)}`, { at }) }
     else log("payload", esc(data.text ?? `agent booted · run ${data.run} · key ${short(data.key)}`), { at }); refresh() })
   es.addEventListener("tx", m => { const { data } = JSON.parse(m.data); onTx(data) })
+  es.addEventListener("flight", m => { const { data } = JSON.parse(m.data); onFlight(data) })
   es.addEventListener("health", m => { const { data } = JSON.parse(m.data); S.health = data; S.busy = data.busy; S.replaying = false; renderSystems(); renderOps(); renderFlow(); renderMetrics(); renderRunbook() })
   es.addEventListener("cmd", m => { const { data, at } = JSON.parse(m.data)
     if (data.start) log("ops", `▶ ${esc(data.name)} · <span class="mono">${esc(data.command)}</span>`, { at })
@@ -487,8 +492,7 @@ function renderOps() {
     !h.ground.usb && "No ground Heltec on USB: plug it in (some cables are charge only).",
     h.diag?.onHotspot && h.pi.lastAgeS != null && h.pi.lastAgeS > 120 && "Payload: the Pi has not answered for over 2 minutes. Check its power; it rejoins the hotspot within about a minute of booting."].filter(Boolean)
   $("ops-hint").innerHTML = probs.length ? probs.map(p => `<span class="warn">${esc(p)}</span>`).join("<br>")
-    : esc(live ? (running ? "Actions run the project's own commands on this laptop; output appears in the event log." : "Start a session to bring the radio link up.")
-      : "Operations run on the ground station laptop: node station/server.mjs, then open http://localhost:8090.")
+    : esc(live ? (running ? "" : "Start a session to bring the radio link up.") : "Operations work on the ground station laptop.")
 }
 for (const [id, name] of Object.entries(OPS)) $(id).onclick = async () => {
   const r = await fetch(`/api/cmd/${name}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ alt: Number($("op-alt").value), when: $("op-atk-when")?.value }) }).then(r => r.json()).catch(e => ({ ok: false, error: e.message }))
@@ -652,7 +656,7 @@ function renderTx() {
   const conf = all.filter(t => t.status === "confirmed"), pend = all.filter(t => t.status === "submitted")
   const ark = conf.filter(t => t.chain === "arkiv" && t.latencyMs), hbar = conf.filter(t => t.chain === "hedera").reduce((s, t) => s + (t.amount ?? 0) + (t.fee ?? 0), 0)
   $("tx-count").textContent = all.length
-  $("tx-sum").innerHTML = `<span>Confirmed<b class="ok">${conf.length}</b></span><span>Pending<b class="${pend.length ? "warn" : ""}">${pend.length}</b></span><span>Arkiv entities<b>${fmt(conf.filter(t => t.chain === "arkiv").reduce((s, t) => s + (t.entities ?? 0), 0))}</b></span><span>Avg Arkiv write<b>${ark.length ? secs(Math.round(ark.reduce((s, t) => s + t.latencyMs, 0) / ark.length)) : "—"}</b></span><span title="Paid on Hedera since this ground station started">Hedera, this session<b>${(hbar / 1e8).toFixed(4)} ℏ</b></span><span title="Every sale on the HCS audit topic, read from the Hedera mirror node">Hedera, all time<b>${S.hbarAll ? `${(S.hbarAll.tinybar / 1e8).toFixed(2)} ℏ · ${S.hbarAll.sales} sales` : "…"}</b></span>`
+  $("tx-sum").innerHTML = `<span>Confirmed<b class="ok">${conf.length}</b></span><span>Pending<b class="${pend.length ? "warn" : ""}">${pend.length}</b></span><span>Arkiv entities<b>${fmt(conf.filter(t => t.chain === "arkiv").reduce((s, t) => s + (t.entities ?? 0), 0))}</b></span><span title="Paid on Hedera since this ground station started">Hedera, this session<b>${(hbar / 1e8).toFixed(4)} ℏ</b></span><span title="Every sale on the HCS audit topic, read from the Hedera mirror node">Hedera, all time<b>${S.hbarAll ? `${(S.hbarAll.tinybar / 1e8).toFixed(2)} ℏ · ${S.hbarAll.sales} sales` : "…"}</b></span>`
   if ($("d-tx").hidden) return
   $("tx-body").innerHTML = all.length ? all.slice(0, 150).map(t => {
     const confirm = t.status !== "confirmed" ? "waiting for chain…" : t.chain === "arkiv" ? `block ${fmt(t.block)} · ${fmt(t.gas)} gas` : t.chain === "hedera" ? `consensus ${secs(t.latencyMs)} · ${t.result}` : `consensus ${hms(t.consensusAt)}`
@@ -694,6 +698,7 @@ const RUNBOOK = [
   ["0G checkpoint logged", () => { const n = S.pi.checkpoints.length; return [n > 0, n ? `${n} checkpoints · ${n - S.pi.checkpoints.filter(c => c.safeStop).length} answered by 0G · ${S.pi.checkpoints.filter(c => c.safeStop).length} safe stops` : "Pi asks 0G before each decision"] }],
 ]
 function renderRunbook() {
+  if (!$("runbook")) return          // the runbook panel was removed from the rail; DEMO.md has the steps
   const r = RUNBOOK.map(([t, f]) => [t, ...f()]), done = r.filter(x => x[1]).length, next = r.findIndex(x => !x[1])
   $("rb-note").textContent = `${done} / ${r.length}`
   $("runbook").innerHTML = r.map(([t, ok, d], i) => `<li class="${ok ? "done" : i === next ? "next" : ""}"><span>${t}</span><small>${esc(d)}</small></li>`).join("")
@@ -975,12 +980,41 @@ function prInit() {
   } else $("pr-bytes").innerHTML = `<p class="pr-empty">Waiting for the next frame from the beacon…</p>`
 }
 
+// ---------------------------------------------------------------- flight picker (what the real beacon flies)
+S.flightNow = { name: "HAB-1 31 Oct 2026", builtin: true }
+function flightLabel() { $("t-flight").textContent = `Flight: ${S.flightNow.builtin ? "HAB-1" : S.flightNow.name.replace(/^Sim /, "")} ▾` }
+function renderFlightPop() {
+  const fs = PAGES?.catalog?.() ?? [], groups = [["ours", "Our flight (built into the beacon)"], ["sim", "Simulated · CUSF Tawhiri"], ["public", "Public balloons near India · SondeHub"]]
+  const live = S.mode === "live"
+  $("flightpop").innerHTML = `<p class="fp-note">${live ? "Pick a flight: the real beacon transmits it over LoRa, signed and verified like HAB-1's." : "Picking a flight for the beacon works on the ground station (live mode)."}</p>` +
+    groups.map(([g, t]) => { const items = fs.filter(f => f.group === g && f.pts.some(p => Number.isFinite(p[3])))
+      return `<div class="fp-group"><h4>${t}</h4>${items.length ? items.map(f => `<button type="button" class="fp-item${(f.id === "hab1" && S.flightNow.builtin) || f.name.replace(/^Simulated · /, "Sim ").slice(0, 40) === S.flightNow.name ? " on" : ""}" data-id="${f.id}" ${live ? "" : "disabled"}><b>${esc(f.name)}</b><small>${esc(f.sub)} · ${fmt(f.maxAlt / 1000, 1)} km</small></button>`).join("") : `<p class="fp-note">${g === "ours" ? "" : "loading…"}</p>`}</div>` }).join("")
+  for (const b of $("flightpop").querySelectorAll(".fp-item")) b.onclick = async () => {
+    for (const o of $("flightpop").querySelectorAll(".fp-item")) o.disabled = true
+    b.querySelector("small").textContent = "sending to the beacon…"
+    const r = await PAGES.fly(b.dataset.id)
+    if (r?.ok) { $("flightpop").hidden = true; $("t-flight").setAttribute("aria-expanded", "false") } else renderFlightPop()
+  }
+}
+$("t-flight").onclick = () => {
+  const open = $("flightpop").hidden; $("flightpop").hidden = !open; $("t-flight").setAttribute("aria-expanded", open)
+  if (open) { PAGES?.loadCatalog?.(); renderFlightPop(); const iv = setInterval(() => { if ($("flightpop").hidden) clearInterval(iv); else renderFlightPop() }, 2500) }
+}
+function onFlight(f) {
+  S.flightNow = f; flightLabel()
+  S.frames.clear(); S.sigs = []; S.predictions = []; S.lastFrame = null
+  if (!f.builtin && f.track?.length) { const lons = f.track.map(p => p[0]), lats = f.track.map(p => p[1]); map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 80, maxZoom: 9, duration: 800 }) }
+  else fit(800)
+  log("ops", f.builtin ? "the beacon is back on the built-in HAB-1 replay" : `the beacon now flies <b>${esc(f.name)}</b>: ${f.samples} samples, one every ${f.stepS} s of flight, peak ${fmt(f.peakM)} m. Landing re-prediction is paused (our cached winds are for HAB-1's day and pad)`)
+  refresh()
+}
+
 // view switcher
 for (const b of document.querySelectorAll(".viewbar [role=tab]")) b.onclick = () => setView(b.dataset.v)
 function setView(v) {
   S.view = v; $("center").dataset.view = v
   for (const b of document.querySelectorAll(".viewbar [role=tab]")) b.setAttribute("aria-selected", b.dataset.v === v)
-  $("viewbar-note").textContent = v === "map" ? "" : S.mode === "live" ? "packets move when real events happen" : "archive: live packets appear on the ground station"
+  $("viewbar-note").textContent = ""
   requestAnimationFrame(() => { map.resize(); layoutFlow(); draw() })
 }
 addEventListener("resize", () => layoutFlow())
@@ -988,11 +1022,13 @@ addEventListener("resize", () => layoutFlow())
 // ---------------------------------------------------------------- boot
 const qs0 = new URLSearchParams(location.search)
 let live = false
-try { const r = await timeout(fetch("/api/state"), 2500); live = r.ok && (await r.json()).station === true } catch {}
+let stationState = null
+try { const r = await timeout(fetch("/api/state"), 2500); stationState = r.ok ? await r.json() : null; live = stationState?.station === true } catch {}
 if (live) {
   S.mode = "live"; $("mode").textContent = "Live"; $("mode").dataset.mode = "live"; $("session").disabled = true; $("session").innerHTML = `<option>live ground station</option>`
   S.layers.archive = true; $("layers").querySelector('[data-l="archive"]').checked = true
   connectLive()
+  if (stationState?.flight && !stationState.flight.builtin) { S.flightNow = stationState.flight; flightLabel() }
 } else {
   $("mode").textContent = "Archive"; archiveFlightLog()
 }

@@ -31,9 +31,9 @@ export function initPages(c) {
     $("zg-models").innerHTML = `<thead><tr><th>Checkpoint</th><th>0G model</th><th>Question</th><th>Acts only if</th><th>Otherwise (safe)</th></tr></thead><tbody>
       <tr><td>burst</td><td>${m("vela-2.0-9b")}</td><td class="wrap">Has the balloon burst? (altitude history, vertical speed)</td><td class="ok">P(start_recovery) ≥ 0.8</td><td>hold, ask again in 30 s</td></tr>
       <tr><td>thermal</td><td>${m("vela-2.0-9b")}</td><td class="wrap">Should the camera keep running? (SoC temperature, limit)</td><td class="ok">P(continue) ≥ 0.8</td><td>pause the camera</td></tr>
-      <tr><td>vision</td><td>${m("qwen3-vl-plus", false)} then ${m("laya")}</td><td class="wrap">Is this frame worth the radio? Then Laya reads the vision model's own words: does it say the image shows nothing?</td><td class="ok">drop and P(empty) ≥ 0.7</td><td>keep the frame on disk</td></tr>
-      <tr><td>analysis</td><td>${m("0gm-1.0-35b-a3b")} then ${m("vela-2.0-9b")}</td><td class="wrap">An insight from Arkiv data, then Vela marks any claim the data does not support (span question)</td><td class="ok">stored with guardVerdict</td><td>nothing stored if 0G does not answer</td></tr>
-      <tr><td>decision models down</td><td>${m("0gm-1.0-35b-a3b")} then ${m("qwen3.6-plus", false)}</td><td class="wrap">the same question to a 0G chat model; the signed log marks it <b>fallback</b>, with no probability, and whether the model is TEE-attested</td><td class="warn">the chat model's answer</td><td>—</td></tr>
+      <tr><td>vision</td><td>${m("qwen3-vl-plus", false)} then ${m("laya")}</td><td class="wrap">Is this frame worth sending? Laya confirms before anything is deleted</td><td class="ok">drop and P(empty) ≥ 0.7</td><td>keep the frame on disk</td></tr>
+      <tr><td>analysis</td><td>${m("0gm-1.0-35b-a3b")} then ${m("vela-2.0-9b")}</td><td class="wrap">An insight from Arkiv data; Vela flags claims the data does not support</td><td class="ok">stored with guardVerdict</td><td>nothing stored if 0G does not answer</td></tr>
+      <tr><td>decision models down</td><td>${m("glm-5.3")} then ${m("0gm-1.0-35b-a3b")} then ${m("qwen3.6-plus", false)}</td><td class="wrap">the same question to a 0G chat model, marked <b>fallback</b> in the signed log</td><td class="warn">its answer (no probability)</td><td>—</td></tr>
       <tr><td>any</td><td colspan="2" class="wrap">every 0G model unreachable, no key, timeout, or an answer that is not one of the allowed actions</td><td class="warn">safe stop</td><td>change nothing, delete nothing, log it, alert the beacon</td></tr></tbody>`
   }
   async function zgLoadLog() {
@@ -224,14 +224,33 @@ export function initPages(c) {
     FL.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right")
     FL.overlay = new deck.MapboxOverlay({ interleaved: false, layers: [], getTooltip: ({ object }) => object?.name && { text: `${object.name}\n${object.sub}` } })
     FL.map.addControl(FL.overlay)
+    loadCatalog(); sfInit(); meshInit()
+    FL.map.on("load", flDraw)
+  }
+  // The flights anyone can pick, here or on the main map: HAB-1, Tawhiri simulations, SondeHub balloons.
+  function loadCatalog() {
+    if (FL.catalog) return; FL.catalog = true
     // HAB-1, measured
     addFlight({ id: "hab1", group: "ours", kind: "track", name: "HAB-1 · 31 Oct 2026", sub: "measured, 1 Hz GPS log", startMs: Date.parse(F.release),
-      pts: F.samples.map(s => [s.lon, s.lat, s.altM]), note: `burst ${fmt(F.burst.altM)} m · landed ${pos(F.landing.lat, F.landing.lon)}` })
+      pts: F.samples.map(s => [s.lon, s.lat, s.altM, Date.parse(s.t)]), note: `burst ${fmt(F.burst.altM)} m · landed ${pos(F.landing.lat, F.landing.lon)}` })
     // the model's simulation of the same flight, made with the GFS forecast before launch
     if (P.hindcast?.track) addFlight({ id: "hind", group: "sim", kind: "pred", name: "Simulated · HAB-1's launch", sub: "Tawhiri on the GFS forecast for 31 Oct", startMs: Date.parse(P.hindcast.track[0].t),
-      pts: P.hindcast.track.map(p => [p.lon, p.lat, p.alt]), note: `landing ${P.hindcast.errorKm.toFixed(2)} km from where HAB-1 really landed` })
-    flSimulate(); flPublic(); sfInit(); meshInit()
-    FL.map.on("load", flDraw)
+      pts: P.hindcast.track.map(p => [p.lon, p.lat, p.alt, Date.parse(p.t)]), note: `landing ${P.hindcast.errorKm.toFixed(2)} km from where HAB-1 really landed` })
+    flSimulate(); flPublic()
+  }
+  // Send a flight to the real beacon (station: /api/flight); it then transmits it over LoRa, signed.
+  async function flyOnHardware(id) {
+    const f = FL.flights.find(x => x.id === id); if (!f) return { ok: false, error: "unknown flight" }
+    if (S.mode !== "live") return { ok: false, error: "only on the ground station (live mode)" }
+    const timed = f.pts.filter(p => Number.isFinite(p[3]))
+    const body = f.id === "hab1" ? { builtin: true } : { name: f.name.replace(/^Simulated · /, "Sim ").slice(0, 40), points: timed.map(p => [p[3], p[1], p[0], p[2] ?? 0]) }
+    if (!body.builtin && timed.length < 2) return { ok: false, error: "this flight has no times to fly" }
+    c.log("ops", `sending <b>${esc(f.name)}</b> to the beacon${body.points ? ` (${body.points.length} points, resampled to at most 180)` : ""}…`)
+    const r = await fetch("/api/flight", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).then(r => r.json()).catch(e => ({ ok: false, error: e.message }))
+    if (r.ok) c.toast("ok", "The beacon is flying a new flight", `${f.name} · signed and sent over LoRa like HAB-1's`)
+    else c.toast("bad", "The beacon did not switch", r.error)
+    c.log("ops", r.ok ? `<span class="ok">beacon now flying</span> ${esc(r.flight.name)}${r.flight.samples ? ` · ${r.flight.samples} samples, one every ${r.flight.stepS} s of flight` : ""}` : `<span class="bad">${esc(r.error)}</span>`)
+    return r
   }
   // Tawhiri (SondeHub): the same balloon launched again from the same pad at the same time of day.
   async function flSimulate() {
@@ -244,7 +263,7 @@ export function initPages(c) {
         ascent_rate: P.balloonProfile.ascentMs, burst_altitude: P.balloonProfile.burstM, descent_rate: P.balloonProfile.slDescentMs })
       try {
         const r = await getJSON(`${SONDEHUB}/tawhiri?${q}`, 30000); if (r.error) throw new Error(r.error.description)
-        const pts = r.prediction.flatMap(x => x.trajectory).map(p => [((p.longitude + 540) % 360) - 180, p.latitude, p.altitude]), e = pts.at(-1)
+        const pts = r.prediction.flatMap(x => x.trajectory).map(p => [((p.longitude + 540) % 360) - 180, p.latitude, p.altitude, Date.parse(p.datetime)]), e = pts.at(-1)
         const miss = dist({ lat: e[1], lon: e[0] }, F.landing) / 1000
         addFlight({ id: `sim${k}`, group: "sim", kind: "pred", name: `Simulated · launch ${when.slice(5, 10)} ${when.slice(11, 16)} UTC`, sub: `Tawhiri on today's GFS (${r.request?.dataset?.slice(0, 13) ?? "latest"})`,
           startMs: Date.parse(when), pts, note: `would land ${(miss).toFixed(1)} km from HAB-1's landing` })
@@ -263,12 +282,12 @@ export function initPages(c) {
           let pts, sub
           if (type === "sonde") {
             const t = await getJSON(`${SONDEHUB}/sonde/${encodeURIComponent(id)}`, 30000)
-            pts = t.filter((_, i) => i % 5 === 0).map(p => [p.lon, p.lat, p.alt])
+            pts = t.filter((_, i) => i % 5 === 0).map(p => [p.lon, p.lat, p.alt, Date.parse(p.datetime)])
             sub = `radiosonde ${v.type ?? ""} · heard by ${v.uploader_callsign ?? "?"}`
           } else {
             const t = await getJSON(`${SONDEHUB}/amateur/telemetry?payload_callsign=${encodeURIComponent(id)}&duration=7d`, 30000)
             const fixes = Object.values(t[id] ?? {}).sort((a, b) => a.datetime < b.datetime ? -1 : 1)
-            pts = fixes.map(p => [p.lon, p.lat, p.alt]).filter(inRegion)
+            pts = fixes.map(p => [p.lon, p.lat, p.alt, Date.parse(p.datetime)]).filter(inRegion)
             sub = `amateur balloon · ${v.modulation ?? v.type ?? ""} · heard by ${v.uploader_callsign ?? "?"}`
           }
           addFlight({ id: `pub-${id}`, group: "public", kind: "pub", name: id, sub, startMs: Date.parse(v.datetime), pts,
@@ -300,8 +319,9 @@ export function initPages(c) {
     $("fl-groups").innerHTML = groups.map(([g, title]) => { const fs = sorted(g)
       const empty = g === "sim" && !fs.some(f => f.id.startsWith("sim")) ? `<p class="status" style="padding:0 12px">${FL.simErr ? `SondeHub Tawhiri did not answer (${esc(FL.simErr)})` : "Running Tawhiri for the next three launches…"}</p>` : ""
         + (g === "public" && !fs.length ? `<p class="status" style="padding:0 12px">${FL.pubErr ? `SondeHub did not answer (${esc(FL.pubErr)})` : FL.publicCount === 0 ? "No public balloon within 2,500 km this week." : "Loading tracks from SondeHub…"}</p>` : "")
-      return `<div class="fl-group"><h3>${title}</h3>${fs.map(f => `<div class="fl-row${f.id === FL.sel ? " sel" : ""}" data-id="${f.id}"><i class="${f.kind}"></i><div><b>${esc(f.name)}</b><small>${esc(f.sub)}</small></div><span class="mono">${fmt(f.maxAlt / 1000, 1)} km</span></div>`).join("")}${empty}</div>` }).join("")
-    for (const r of $("fl-groups").querySelectorAll(".fl-row")) r.onclick = () => flSelect(r.dataset.id)
+      return `<div class="fl-group"><h3>${title}</h3>${fs.map(f => `<div class="fl-row${f.id === FL.sel ? " sel" : ""}" data-id="${f.id}"><i class="${f.kind}"></i><div><b>${esc(f.name)}</b><small>${esc(f.sub)}</small></div><span class="mono">${fmt(f.maxAlt / 1000, 1)} km${S.mode === "live" && f.pts.some(p => Number.isFinite(p[3])) ? ` <button class="fly" type="button" data-fly="${f.id}" title="The real beacon transmits this flight over LoRa">Fly</button>` : ""}</span></div>`).join("")}${empty}</div>` }).join("")
+    for (const r of $("fl-groups").querySelectorAll(".fl-row")) r.onclick = e => { if (e.target.dataset.fly) return; flSelect(r.dataset.id) }
+    for (const b of $("fl-groups").querySelectorAll("[data-fly]")) b.onclick = async e => { e.stopPropagation(); b.disabled = true; b.textContent = "…"; await flyOnHardware(b.dataset.fly); b.disabled = false; b.textContent = "Fly" }
     const hab = FL.flights.find(f => f.id === "hab1")
     $("fl-table").innerHTML = `<thead><tr><th>Flight</th><th>Kind</th><th>Start (UTC)</th><th>Max altitude</th><th>Track length</th><th>Compared with HAB-1</th></tr></thead><tbody>${groups.flatMap(([g]) => sorted(g)).map(f =>
       `<tr class="${f.id === FL.sel ? "sel" : ""}" data-id="${f.id}"><td>${esc(f.name)}</td><td class="${f.kind === "track" ? "" : f.kind === "pred" ? "pred" : "meas"}">${f.kind === "track" ? "measured" : f.kind === "pred" ? "simulated" : "public"}</td><td>${Number.isFinite(f.startMs) ? utc(f.startMs).slice(0, 16) : "—"}</td><td>${fmt(f.maxAlt)} m</td><td>${fmt(f.len / 1000, 1)} km</td><td class="wrap">${esc(f.note ?? "")}${hab && f !== hab && f.kind === "pub" ? ` · peak ${f.maxAlt > hab.maxAlt ? "above" : "below"} HAB-1's ${fmt(hab.maxAlt)} m` : ""}</td></tr>`).join("")}</tbody>`
@@ -356,7 +376,7 @@ export function initPages(c) {
       const tr = r.prediction.flatMap(x => x.trajectory)
       const id = `user${++SIM.n}`
       addFlight({ id, group: "sim", kind: "pred", user: true, fleet: !!o.fleet, site: [o.lon, o.lat, o.alt], name: `Simulated · ${o.name}`, sub: `launch ${o.when.slice(5, 16).replace("T", " ")} UTC · ${o.asc} m/s · burst ${fmt(o.burst)} m`,
-        startMs: Date.parse(o.when), pts: tr.map(p => [((p.longitude + 540) % 360) - 180, p.latitude, p.altitude]), ts: tr.map(p => Date.parse(p.datetime)),
+        startMs: Date.parse(o.when), pts: tr.map(p => [((p.longitude + 540) % 360) - 180, p.latitude, p.altitude, Date.parse(p.datetime)]), ts: tr.map(p => Date.parse(p.datetime)),
         note: `Tawhiri on GFS ${r.request?.dataset?.slice(0, 13) ?? ""}` })
       return FL.flights.find(f => f.id === id)
     } catch (e) { return { error: e.message } }
@@ -494,6 +514,9 @@ export function initPages(c) {
 
   // ------------------------------------------------------------------------------------- show / refresh
   return {
+    catalog: () => FL.flights,
+    loadCatalog,
+    fly: flyOnHardware,
     show(page) {
       if (!started.has(page)) {
         started.add(page)
