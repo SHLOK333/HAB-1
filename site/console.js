@@ -430,11 +430,11 @@ function refresh() { if (!renderQueued) { renderQueued = true; setTimeout(() => 
 function onRadio(e, at) {
   if (e.ev === "data") {
     const f = { ...(S.frames.get(e.seq) ?? {}), ...frameFrom(e), heardAt: at }
-    S.frames.set(e.seq, f); S.lastFrame = f; followTo(f.lat, f.lon)
+    S.frames.set(e.seq, f); S.lastFrame = f; followTo(f.lat, f.lon); prData(e, at)
     flowPacket("beacon-ground", "measured", () => flowPacket("ground-station", "measured", () => flash("station", "info"), 700))
     log("radio", `seq ${e.seq} heard · ${tPlus(e.flight_s)} · ${fmt(e.alt_m)} m · <span class="mono">RSSI ${e.rssi} SNR ${e.snr}${e.live_src === "pi" ? ` · Pi baro ${e.live_hpa} hPa` : ""}</span> · <span class="warn">awaiting signature</span>`, { at, seq: e.seq })
   } else if (e.ev === "sig") {
-    S.sigs.push(e); if (S.sigs.length > 200) S.sigs.shift()
+    S.sigs.push(e); if (S.sigs.length > 200) S.sigs.shift(); prSig(e, at)
     log("radio", `batch signature seq ${e.first}–${e.first + e.count - 1} · boot ${e.boot} · ${e.valid ? (e.replay ? '<span class="bad">REPLAY of an older batch</span>' : '<span class="ok">Ed25519 valid</span>') : '<span class="bad">INVALID</span>'}`, { at })
   } else if (e.ev === "verdict") {
     const f = { ...(S.frames.get(e.seq) ?? {}), ...frameFrom(e), verdict: e.verdict, heardAt: S.frames.get(e.seq)?.heardAt ?? at }
@@ -459,7 +459,7 @@ function connectLive() {
   es.addEventListener("prediction", m => { const { data, at } = JSON.parse(m.data); if (S.predictions.length && data.fromFlightS < S.predictions.at(-1).fromFlightS - 600) S.predictions = []; S.predictions.push(data); if (S.predictions.length > 300) S.predictions.shift()
     log("model", `Tawhiri re-prediction from seq ${data.fromSeq} (${fmt(data.fromAltM)} m, ${data.measuredBands} measured wind layers) · <span class="pred">lands ${data.missKm.toFixed(2)} km from actual</span> · <span class="mono">${data.ms} ms</span>`, { at, seq: data.fromSeq }); refresh() })
   es.addEventListener("arkiv", m => { const { data, at } = JSON.parse(m.data)
-    if (data.kind === "batch") { S.arkivBatches.push(data); log("arkiv", `published ${data.count} verified frames (seq ${data.seqs[0]}–${data.seqs.at(-1)}) · <span class="mono">tx ${short(data.tx)} · ${data.ms} ms</span>`, { at }) }
+    if (data.kind === "batch") { S.arkivBatches.push(data); prArkiv(data); log("arkiv", `published ${data.count} verified frames (seq ${data.seqs[0]}–${data.seqs.at(-1)}) · <span class="mono">tx ${short(data.tx)} · ${data.ms} ms</span>`, { at }) }
     else if (data.kind === "run") { S.arkivRun = data.entity; log("arkiv", `session entity created <span class="mono">${short(data.entity)}</span>`, { at }) }
     else log("arkiv", `<span class="warn">publish retry</span> · ${esc(data.text)}`, { at }); refresh() })
   es.addEventListener("hedera", m => { const { data, at } = JSON.parse(m.data)
@@ -778,12 +778,180 @@ function flowPacket(edge, colourVar, then, dur = 950) {
     c.setAttribute("cx", p.x); c.setAttribute("cy", p.y); if (k < 1) requestAnimationFrame(step); else { c.remove(); then?.() } }
   requestAnimationFrame(step)
 }
+// ---------------------------------------------------------------- protocol view
+// Each frame as the ground receiver hears it: across the LoRa link (timed from its real
+// airtime), byte by byte, into its batch. When the batch's SIG frame arrives, this browser
+// recomputes every frame's salted hash and checks the beacon's Ed25519 signature itself
+// (WebCrypto), then the batch moves to the history and picks up its Arkiv transaction.
+const PR = { heard: new Map(), batches: [], cur: null, queue: Promise.resolve(), key: undefined, verdicts: new Map() }
+const AIR_SCALE = 4                       // animations run 4x slower than the real airtime
+const BATCH_N = 6
+// LoRa time on air: SF9, 125 kHz, CR 4/5, 8-symbol preamble, explicit header, CRC (Semtech AN1200.13).
+const airtimeMs = n => (8 + 4.25 + 8 + Math.max(Math.ceil((8 * n - 4 * 9 + 28 + 16) / 36) * 5, 0)) * (512 / 125)
+const unhex = h => Uint8Array.from((h ?? "").match(/../g) ?? [], x => parseInt(x, 16))
+const hexOf = b => Array.from(b, x => x.toString(16).padStart(2, "0")).join("")
+const prWait = ms => new Promise(r => setTimeout(r, ms))
+const prReduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches
+const DATA_FIELDS = [[0, 1, "magic", "", f => "0xB2 data"], [1, 5, "seq", "", f => f.seq], [5, 7, "flight time", "", f => tPlus(f.t)],
+  [7, 11, "latitude", "", f => f.lat.toFixed(5)], [11, 15, "longitude", "", f => f.lon.toFixed(5)], [15, 17, "altitude", "", f => `${fmt(f.alt)} m`],
+  [17, 19, "pressure", "", f => `${f.press.toFixed(1)} hPa`], [19, 21, "temperature", "", f => `${f.temp.toFixed(2)} °C`],
+  [21, 23, "live pressure", "live", f => f.livePa ? `${f.livePa.toFixed(1)} hPa` : "none"], [23, 25, "live temp", "live", f => f.livePa ? `${f.liveC.toFixed(2)} °C` : "none"],
+  [25, 26, "flags", "", f => [f.flags & 1 && "replay", f.flags & 2 && "live baro", f.flags & 4 && "from Pi"].filter(Boolean).join(" · ") || "0"], [26, 28, "key id", "", f => f.key]]
+const SIG_FIELDS = [[0, 1, "magic", "", s => "0xB3 signature"], [1, 5, "first seq", "", s => s.first], [5, 6, "count", "", s => s.count], [6, 8, "boot", "", s => s.boot],
+  [8, 12, "salt", "salt", s => `${s.salt} · revealed now`], [12, 36, "6 hashes", "hash", s => s.hashes.join(" ")], [36, 100, "Ed25519 signature", "sig", s => `${s.sig.slice(0, 16)}…`]]
+function decodeData(b) {
+  const v = new DataView(b.buffer, b.byteOffset, b.byteLength)
+  return { seq: v.getUint32(1, true), t: v.getInt16(5, true), lat: v.getInt32(7, true) / 1e7, lon: v.getInt32(11, true) / 1e7, alt: v.getUint16(15, true),
+    press: v.getUint16(17, true) / 10, temp: v.getInt16(19, true) / 100, livePa: v.getUint16(21, true) / 10, liveC: v.getInt16(23, true) / 100, flags: b[25], key: hexOf(b.subarray(26, 28)) }
+}
+function decodeSig(b) {
+  const v = new DataView(b.buffer, b.byteOffset, b.byteLength)
+  return { first: v.getUint32(1, true), count: b[5], boot: v.getUint16(6, true), salt: hexOf(b.subarray(8, 12)),
+    hashes: Array.from({ length: BATCH_N }, (_, i) => hexOf(b.subarray(12 + 4 * i, 16 + 4 * i))), sig: hexOf(b.subarray(36, 100)) }
+}
+async function sha4(salt, frame) { const m = new Uint8Array(salt.length + frame.length); m.set(salt); m.set(frame, salt.length); return hexOf(new Uint8Array(await crypto.subtle.digest("SHA-256", m)).subarray(0, 4)) }
+async function edVerify(msg, sig) {
+  try {
+    if (PR.key === undefined) PR.key = await crypto.subtle.importKey("raw", unhex(X.keys.beacon), { name: "Ed25519" }, false, ["verify"])
+    return await crypto.subtle.verify({ name: "Ed25519" }, PR.key, sig, msg)
+  } catch { PR.key = null; return null }                  // this browser has no Ed25519 in WebCrypto
+}
+const prVisible = () => S.view === "protocol" && !document.hidden
+const batchOf = seq => seq - (seq % BATCH_N)
+
+function prEnqueue(fn) { PR.queue = PR.queue.then(fn).catch(e => console.error("protocol view", e)); }
+// live events animate; the backlog replayed on connect, or a hidden view, is applied at once
+const prAnimate = at => prVisible() && !prReduced() && Date.now() - (at ?? 0) < 15000
+
+async function prAir(kind, n, label, animate) {
+  const ms = airtimeMs(n)
+  $("pr-lane-note").textContent = `${kind === "sig" ? "SIG" : "DATA"} · ${n} B · ${ms.toFixed(1)} ms on air${animate ? ` · shown ${AIR_SCALE}× slower` : ""}`
+  if (!animate) return
+  const lane = $("pr-lane"), w = lane.clientWidth, dur = ms * AIR_SCALE
+  const trail = document.createElement("div"); trail.className = `pr-trail ${kind}`
+  const pkt = document.createElement("div"); pkt.className = `pr-pkt mono ${kind}`; pkt.innerHTML = `<i style="width:${Math.round(n / 2)}px"></i>${esc(label)}`
+  lane.append(trail, pkt)
+  $("pr-tx").classList.remove("ping"); void $("pr-tx").offsetWidth; $("pr-tx").classList.add("ping")
+  const end = Math.max(0, w - pkt.offsetWidth), ease = "cubic-bezier(.45, 0, .25, 1)"
+  trail.animate([{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }], { duration: dur, easing: ease, fill: "forwards" })
+  await pkt.animate([{ transform: "translateX(0)" }, { transform: `translateX(${end}px)` }], { duration: dur, easing: ease, fill: "forwards" }).finished
+  $("pr-rx").classList.remove("ping"); void $("pr-rx").offsetWidth; $("pr-rx").classList.add("ping")
+  pkt.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: "forwards" }); trail.animate([{ opacity: .8 }, { opacity: 0 }], { duration: 500, fill: "forwards" })
+  setTimeout(() => { pkt.remove(); trail.remove() }, 600)
+}
+
+function prBytes(bytes, fields, decoded, title, meta, animate) {
+  $("pr-ftitle").textContent = title; $("pr-fmeta").textContent = meta
+  const step = animate ? Math.min(14, 520 / bytes.length) : 0
+  const owner = i => fields.findIndex(([a, b]) => i >= a && i < b)
+  $("pr-bytes").innerHTML = Array.from(bytes, (x, i) => { const k = owner(i), f = fields[k]
+    return `<span class="pr-b${k % 2 ? " alt" : ""}${f[3] ? " " + f[3] : ""}${animate ? " in" : ""}" data-f="${k}" style="--d:${Math.round(i * step)}ms">${x.toString(16).padStart(2, "0")}</span>` }).join("")
+  $("pr-fields").innerHTML = fields.map(([a, b, name, cls, val], k) =>
+    `<span class="pr-f${cls ? " " + cls : ""}${animate ? " in" : ""}" data-f="${k}" style="--d:${Math.round(b * step + 60)}ms"><small>${esc(name)}</small><span class="mono">${esc(String(val(decoded)))}</span></span>`).join("")
+  return prWait(animate ? bytes.length * step + 300 : 0)
+}
+$("pr-fields").addEventListener("pointerover", e => { const k = e.target.closest(".pr-f")?.dataset.f; for (const c of $("pr-bytes").children) c.classList.toggle("hl", c.dataset.f === k) })
+$("pr-fields").addEventListener("pointerleave", () => { for (const c of $("pr-bytes").children) c.classList.remove("hl") })
+
+function prSlotHtml(seq, slot) {
+  const st = slot?.state ?? "empty"
+  const label = { empty: "not heard yet", pending: "hash unknown until the salt", ok: "VERIFIED", bad: "REJECTED", missing: "not heard" }[st]
+  const f = slot?.real ?? slot?.cands?.[0]
+  return `<b>seq ${seq}</b>${f ? `<small>${fmt(f.d.alt)} m · ${tPlus(f.d.t)}</small><small>RSSI ${f.rssi ?? "—"} · SNR ${f.snr ?? "—"}</small>` : "<small>—</small><small>&nbsp;</small>"}
+    <span class="h mono">${slot?.hash ? `#${slot.hash}` : "# · · · ·"}</span><span class="pr-st">${label}</span>${slot?.fakes ? `<span class="fakes">${slot.fakes} forged frame${slot.fakes > 1 ? "s" : ""} dropped</span>` : ""}`
+}
+function prRenderBatch() {
+  const b = PR.cur
+  if (!b) { $("pr-slots").innerHTML = ""; $("pr-btitle").textContent = "Batch"; $("pr-bmeta").textContent = ""; return }
+  $("pr-btitle").textContent = `Batch seq ${b.first}–${b.first + BATCH_N - 1}`
+  $("pr-bmeta").textContent = b.sig ? `boot ${b.sig.boot} · salt ${b.sig.salt}` : "frames wait here until the batch signature arrives"
+  $("pr-slots").innerHTML = Array.from({ length: BATCH_N }, (_, i) => { const seq = b.first + i, s = b.slots.get(seq)
+    return `<div class="pr-slot" data-seq="${seq}" data-s="${s?.state ?? "empty"}">${prSlotHtml(seq, s)}</div>` }).join("")
+}
+function prSlotUpdate(seq, cls) {
+  const el = $("pr-slots").querySelector(`[data-seq="${seq}"]`), s = PR.cur?.slots.get(seq); if (!el) return
+  el.dataset.s = s?.state ?? "empty"; el.innerHTML = prSlotHtml(seq, s)
+  if (cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls) }
+}
+function prNewBatch(first) { PR.cur = { first, slots: new Map(), sig: null, proof: [] }; $("pr-proof").innerHTML = ""; prRenderBatch() }
+
+function prData(e, at) {
+  if (!e.hex || e.hex.length !== 56) return
+  const bytes = unhex(e.hex), d = decodeData(bytes), first = batchOf(d.seq)
+  prEnqueue(async () => {
+    const animate = prAnimate(at)
+    if (!PR.cur || PR.cur.first !== first) prNewBatch(first)
+    await prAir("data", bytes.length, `DATA seq ${d.seq}`, animate)
+    await prBytes(bytes, DATA_FIELDS, d, `Data frame · seq ${d.seq}`, `28 B · ${airtimeMs(28).toFixed(1)} ms on air · RSSI ${e.rssi} dBm · SNR ${e.snr} dB`, animate)
+    const s = PR.cur.slots.get(d.seq) ?? { cands: [], state: "pending" }
+    if (!s.cands.some(c => c.hex === e.hex)) s.cands.push({ hex: e.hex, bytes, d, rssi: e.rssi, snr: e.snr })
+    s.state = s.state === "ok" ? "ok" : "pending"
+    PR.cur.slots.set(d.seq, s); prSlotUpdate(d.seq, animate ? "land" : null)
+  })
+}
+
+function prSig(e, at) {
+  if (!e.hex || e.hex.length !== 200) return
+  const bytes = unhex(e.hex), g = decodeSig(bytes)
+  prEnqueue(async () => {
+    const animate = prAnimate(at)
+    if (!PR.cur || PR.cur.first !== g.first) prNewBatch(g.first)
+    const b = PR.cur; b.sig = g; b.rssi = e.rssi
+    await prAir("sig", bytes.length, `SIG seq ${g.first}–${g.first + BATCH_N - 1}`, animate)
+    await prBytes(bytes, SIG_FIELDS, g, `Signature frame · seq ${g.first}–${g.first + BATCH_N - 1}`, `100 B · ${airtimeMs(100).toFixed(1)} ms on air · RSSI ${e.rssi} dBm`, animate)
+    prRenderBatch()
+    const proof = (html, cls = "") => { const el = document.createElement("div"); el.className = cls; el.innerHTML = html; $("pr-proof").append(el) }
+    $("pr-proof").innerHTML = ""
+    proof(`salt <span class="acc">${g.salt}</span> revealed: until now no one, a forger included, could compute these hashes`)
+    const salt = unhex(g.salt)
+    for (let i = 0; i < BATCH_N; i++) {
+      const seq = g.first + i, s = b.slots.get(seq) ?? { cands: [] }; b.slots.set(seq, s)
+      let real = null, fakes = 0
+      for (const c of s.cands) { const h = await sha4(salt, c.bytes); if (h === g.hashes[i] && !real) { real = c; s.hash = h } else fakes++ }
+      s.real = real; s.fakes = fakes; s.state = real ? "ok" : s.cands.length ? "bad" : "missing"; s.hash ??= s.cands.length ? await sha4(salt, s.cands[0].bytes) : null
+      prSlotUpdate(seq, animate ? "scan" : null)
+      if (animate) await prWait(260)
+    }
+    const valid = await edVerify(bytes.subarray(0, 36), bytes.subarray(36, 100))
+    b.edBrowser = valid; b.edStation = e.valid
+    const n = [...b.slots.values()].filter(s => s.state === "ok").length, fk = [...b.slots.values()].reduce((a, s) => a + (s.fakes ?? 0), 0)
+    proof(`SHA-256(salt ‖ frame)[0:4] recomputed here for ${b.slots.size} slots: <span class="ok">${n} match the signed list</span>${fk ? ` · <span class="bad">${fk} forged frame${fk > 1 ? "s" : ""} rejected</span>` : ""}`)
+    proof(valid === null ? `Ed25519 over bytes 0–35: ${e.valid ? '<span class="ok">valid</span>' : '<span class="bad">INVALID</span>'} (checked by the ground station; this browser has no Ed25519)`
+      : `Ed25519 over bytes 0–35 with beacon key ${short(X.keys.beacon)}: ${valid ? '<span class="ok">valid, verified in this browser</span>' : '<span class="bad">INVALID</span>'}${e.replay ? ' · <span class="bad">replay of an older batch</span>' : ""}`)
+    PR.batches.unshift({ ...b, at: Date.now(), states: Array.from({ length: BATCH_N }, (_, i) => b.slots.get(g.first + i)?.state ?? "missing"), n, fk })
+    if (PR.batches.length > 40) PR.batches.pop()
+    prRenderHist(animate)
+  })
+}
+
+// Arkiv confirmations can arrive before their batch has been animated: keep them by seq.
+PR.arkiv = new Map()
+function prArkiv(data) { for (const q of data.seqs ?? []) PR.arkiv.set(Number(q), data); if (PR.arkiv.size > 600) PR.arkiv.delete(PR.arkiv.keys().next().value); prRenderHist(false) }
+function prRenderHist(animate) {
+  for (const b of PR.batches) if (!b.arkivTx) { const d = Array.from({ length: BATCH_N }, (_, i) => PR.arkiv.get(b.first + i)).find(Boolean); if (d) { b.arkivTx = d.tx; b.arkivMs = d.ms } }
+  $("pr-hist").innerHTML = PR.batches.length ? PR.batches.map((b, i) => `<li class="${animate && i === 0 ? "new" : ""}">
+      <span class="mono">seq ${b.first}–${b.first + BATCH_N - 1}</span>
+      <span class="cells">${b.states.map(s => `<i data-s="${s}"></i>`).join("")}</span>
+      <span>${b.n}/${BATCH_N} verified${b.fk ? ` · <span class="bad">${b.fk} forged</span>` : ""} · Ed25519 ${b.edBrowser ? '<span class="ok">valid (browser)</span>' : b.edBrowser === false ? '<span class="bad">invalid</span>' : b.edStation ? '<span class="ok">valid (station)</span>' : '<span class="bad">invalid</span>'}</span>
+      <span class="mono">${b.arkivTx ? `Arkiv <a href="https://rabdi.explorer.arkiv.network/tx/${b.arkivTx}" target="_blank" rel="noopener">${short(b.arkivTx)}</a> · ${b.arkivMs} ms` : "publishing to Arkiv…"}</span></li>`).join("")
+    : `<li class="pr-empty">${S.mode === "live" ? "No batch signature heard yet: one comes every 7th slot (about 84 s)." : "Archive mode: signed batches appear here live on the ground station."}</li>`
+}
+function prInit() {
+  prRenderHist(false)
+  if (S.mode !== "live") {
+    $("pr-lane-note").textContent = "archive: live frames appear on the ground station"
+    const f = [...S.frames.values()].filter(f => f.hex?.length === 56).at(-1)
+    if (f) { const b = unhex(f.hex); prBytes(b, DATA_FIELDS, decodeData(b), `Data frame · seq ${f.seq} (recorded on Arkiv)`, "28 B", false) }
+    else $("pr-bytes").innerHTML = `<p class="pr-empty">Frames appear here byte by byte as the ground receiver hears them.</p>`
+  } else $("pr-bytes").innerHTML = `<p class="pr-empty">Waiting for the next frame from the beacon…</p>`
+}
+
 // view switcher
 for (const b of document.querySelectorAll(".viewbar [role=tab]")) b.onclick = () => setView(b.dataset.v)
 function setView(v) {
   S.view = v; $("center").dataset.view = v
   for (const b of document.querySelectorAll(".viewbar [role=tab]")) b.setAttribute("aria-selected", b.dataset.v === v)
-  $("viewbar-note").textContent = v === "map" ? "" : S.mode === "live" ? "packets move when real events happen" : "archive: live packets appear on the ground station"
+  $("viewbar-note").textContent = v === "map" ? "" : v === "protocol" ? (S.mode === "live" ? "every frame as it is heard · hashes and signature re-checked in this browser" : "archive: live frames appear on the ground station") : S.mode === "live" ? "packets move when real events happen" : "archive: live packets appear on the ground station"
   requestAnimationFrame(() => { map.resize(); layoutFlow(); draw() })
 }
 addEventListener("resize", () => layoutFlow())
@@ -800,7 +968,7 @@ if (live) {
   $("mode").textContent = "Archive"; archiveFlightLog()
 }
 if (!live) S.replaying = false
-renderOps(); renderSystems(); renderInspector(); renderLog(); drawScrub(); draw(); renderTx(); renderRunbook(); renderMetrics()
+renderOps(); renderSystems(); renderInspector(); renderLog(); drawScrub(); draw(); renderTx(); renderRunbook(); renderMetrics(); prInit()
 setView(qs0.get("view") ?? (live && innerWidth >= 1500 ? "split" : "map"))
 addEventListener("resize", () => { drawScrub(); renderPlots() })
 addEventListener("keydown", e => { if (e.code === "Space" && S.mode !== "live" && !/INPUT|SELECT|TEXTAREA|BUTTON/.test(document.activeElement.tagName)) { e.preventDefault(); $("play").click() } })
