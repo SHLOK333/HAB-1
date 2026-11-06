@@ -28,6 +28,54 @@ Live, the console is served by the ground-station laptop (`./demo.sh start`, the
 `http://localhost:8090`). Without the hardware, serve `site/` with any static server and the
 same pages open in Archive mode.
 
+### Contracts and on-chain addresses
+
+Everything this deployment wrote or relies on, in one place (all new on 5 to 6 Nov 2026).
+
+**0G Galileo testnet** (chain 16602, [chainscan-galileo.0g.ai](https://chainscan-galileo.0g.ai)): our one smart contract
+
+| What | Address / transaction |
+|---|---|
+| **EpisodeRegistry** (stores the Pi's public key and each episode log's 0G Storage root) | [`0xF7D35D2cAf0319384E3dfA2c10157f9d0B57b8Be`](https://chainscan-galileo.0g.ai/address/0xF7D35D2cAf0319384E3dfA2c10157f9d0B57b8Be) |
+| Deploy transaction | [`0xb653aaa2abf748ac289e454629727cd578c22005ce2c65d2251dade3be9674d6`](https://chainscan-galileo.0g.ai/tx/0xb653aaa2abf748ac289e454629727cd578c22005ce2c65d2251dade3be9674d6), block 64,102,739 |
+| Deployer and recorder wallet | `0xb26Bf4A2D754b22Bc73CE447f08A7AA83dd2AEEe` |
+| Registry entry #0, run `retest-1106` (38 decisions) | tx [`0x1736318e…73c3`](https://chainscan-galileo.0g.ai/tx/0x1736318e0ce290bb822cbbb3106806cf70a61220b40770c4ebd599115cac73c3) · 0G Storage root `0x169b92e8635511f7584db2a5f1edb612584be24624befb5360effa36d8dd15eb` · storage tx `0x38a55260f0a1ef0f5275371c4798d970fc398325961868b3c326f7f37acd5df4` |
+| Registry entry #1, run `retest-1106` (99 decisions, 66 with a 0G request ID) | tx [`0x2b9fe7b2…a810`](https://chainscan-galileo.0g.ai/tx/0x2b9fe7b2955e89a71686ef1e2d5bc97804c8d626ab64d882ef907da065f3a810) · 0G Storage root `0x224acb0973c95f2c78ebda79deec91ae3d810046d2a7e00ea79d19cff9e51563` · storage tx `0x47779295b33a4d398b4404d35c6d1bcb460fd3a0a73ca4f2c84589c72ca835f9` |
+
+**0G mainnet** (chain 16661, [chainscan.0g.ai](https://chainscan.0g.ai)): read, not deployed by us, to prove which model made each decision
+
+| What | Address |
+|---|---|
+| 0G's InferenceServing contract (provider registry) | [`0x47340d900bdFec2BD393c626E12ea0656F938d84`](https://chainscan.0g.ai/address/0x47340d900bdFec2BD393c626E12ea0656F938d84) |
+| glm-5.3 provider (TeeML) | `0xD179F4526064846dE9a9E9D93683AF75CB72E503` |
+| Its enclave (TEE) signer, which signed the proven payload decisions | [`0x0766BC72beB6dAe764eE51C781c0A68117E69179`](https://chainscan.0g.ai/address/0x0766BC72beB6dAe764eE51C781c0A68117E69179) |
+
+**Hedera testnet** ([hashscan.io/testnet](https://hashscan.io/testnet)): no smart contracts; native services only (accounts, allowances, HCS)
+
+| What | Account / topic |
+|---|---|
+| Paying agent (x402 over HTTP) | [`0.0.11326830`](https://hashscan.io/testnet/account/0.0.11326830) |
+| Seller, x402 `payTo` | [`0.0.11327348`](https://hashscan.io/testnet/account/0.0.11327348) |
+| Buyer board (ground Heltec; Ed25519 key made on the ESP32) | [`0.0.11327397`](https://hashscan.io/testnet/account/0.0.11327397) |
+| HCS audit topic (one message per sale) | [`0.0.11327351`](https://hashscan.io/testnet/topic/0.0.11327351) |
+| Allowance signed on the board (1 HBAR to the seller) | [`0.0.11326830@1793898902.991873791`](https://hashscan.io/testnet/transaction/0.0.11326830-1793898902-991873791) |
+| Facilitators used | x402.org (fee payer `0.0.9185802`), Blocky402 (fee payer `0.0.7162784`) |
+
+**Arkiv Rabdi testnet** (chain 7794095, [rabdi.explorer.arkiv.network](https://rabdi.explorer.arkiv.network)): no contract; entities owned by these wallets
+
+| What | Wallet |
+|---|---|
+| Ground station (packets, runs, wind, predictions, public balloons, 0G insights) | [`0x532cCE61F117A394D595E9fb7069f4D6CE3Bb047`](https://rabdi.explorer.arkiv.network/address/0x532cCE61F117A394D595E9fb7069f4D6CE3Bb047) |
+| Simulated receivers 1 and 2 | `0xAE1796225FFdf537eF8122dA92ACDE3D1aE9b363`, `0xeeeB58826006087868079C27159838a3B694721e` |
+
+**Device keys** (Ed25519 public keys; private keys never leave each device)
+
+| Device | Public key |
+|---|---|
+| Beacon (signs every batch of radio frames) | `f7bf12e3c6b832c7daec9d7b21474d129183b2c7d1e0aafc1c223395c2d6d4e3` |
+| Ground board (signs vouchers and x402 payments; key of Hedera account `0.0.11327397`) | `ca3798af825c97e33026ca6ff67049ec044c7b0cc504b6f304bf12846513b104` |
+| Raspberry Pi (signs every decision; stored in EpisodeRegistry) | `82513dff297d1533f27a055b440b9efd384bc0f576a546ddb2cb546a19363c06` |
+
 ---
 
 ## Contents
@@ -47,6 +95,8 @@ same pages open in Archive mode.
 12. [What is not done](#what-is-not-done)
 13. [Repository layout](#repository-layout)
 14. [How AI was used](#how-ai-was-used)
+
+See also **[Contracts and on-chain addresses](#contracts-and-on-chain-addresses)** above.
 
 To change anything after a judge's comment (contracts, the Pi, the boards), or to run it all
 from another laptop, see **[CHANGING.md](CHANGING.md)**.
