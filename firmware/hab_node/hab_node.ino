@@ -504,6 +504,9 @@ void sendData() {
       bool any = false; for (int i = 5; i < UPLINK_LEN; i++) any |= up[i] != 0;
       logf("data seq %lu T%+d s %u m | up ok %lu ms rssi %.1f snr %.1f%s%s | duty %.2f%%\n",
            seq, s.flightS, s.altM, dt, rssi, snr, any ? " payload " : "", any ? hex(up + 5, UPLINK_LEN - 5).c_str() : "", dutyPct());
+      // 0G over LoRa: a decision the ground station got from 0G rides in the uplink payload;
+      // pass it to the Pi as is. The Pi checks its code and freshness (the beacon does not).
+      if (any) tap.printf("UP %lu %s\n", seq, hex(up + 5, UPLINK_LEN - 5).c_str());
     } else if (rst == RADIOLIB_ERR_NONE && echo == seq &&
                ((n == REQ_LEN && up[0] == MAGIC_REQ) || (n == PAY_LEN && up[0] == MAGIC_PAY) || (n == SETTLED_LEN && up[0] == MAGIC_SETTLED))) {
       upOk++;                       // each of these is also the ack for this frame
