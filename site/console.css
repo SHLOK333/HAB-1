@@ -537,7 +537,6 @@ body[data-page="hedera"] #pg-hedera, body[data-page="arkiv"] #pg-arkiv { display
 
 /* ---------------------------------------------------------------- floating dock (vanilla port of Aceternity UI's FloatingDock) */
 .fdock { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 40; }
-.fdock.in-map { position: absolute; bottom: 14px; }
 .fdock-desktop { display: none; height: 64px; align-items: flex-end; gap: 16px; border-radius: 16px; background: #f9fafb; padding: 0 16px 12px; }
 .fdock-desktop a { text-decoration: none; }
 .fdock-item { position: relative; display: flex; aspect-ratio: 1 / 1; width: 40px; height: 40px; align-items: center; justify-content: center; border-radius: 9999px; background: #e5e7eb; color: #737373; }
@@ -565,3 +564,4 @@ body[data-page="hedera"] #pg-hedera, body[data-page="arkiv"] #pg-arkiv { display
 [data-theme="dark"] .fdock-toggle { background: #262626; color: #a3a3a3; }
 @media (prefers-reduced-motion: reduce) { .fdock-tip.in, .fdock-tip.out, .fdock-mlist a { animation: none; } }
 .pg-in { padding-bottom: 110px; }
+.fdock[hidden] { display: none; }

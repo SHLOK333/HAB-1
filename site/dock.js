@@ -75,13 +75,10 @@ const toggle = dock.querySelector(".fdock-toggle"), mlist = dock.querySelector("
 toggle.onclick = () => { const open = mlist.hidden; mlist.hidden = !open; toggle.setAttribute("aria-expanded", open); toggle.setAttribute("aria-label", open ? "Close quick navigation" : "Open quick navigation") }
 for (const a of mlist.querySelectorAll("a")) a.addEventListener("click", () => { mlist.hidden = true; toggle.setAttribute("aria-expanded", "false") })
 
-// ---- current page, and placement: over the map on Mission, floating at the bottom elsewhere
+// ---- current page; not shown on Mission (the map and its toolbars already fill that page)
 function place() {
   const page = (location.hash.match(/^#\/(\w+)/)?.[1]) || "mission"
   for (const a of dock.querySelectorAll("a[data-k]")) a.classList.toggle("cur", a.dataset.k === page)
-  const mapwrap = document.querySelector(".mapwrap"), inMap = page === "mission" && mapwrap
-  if (inMap && dock.parentElement !== mapwrap) mapwrap.append(dock)
-  if (!inMap && dock.parentElement !== document.body) document.body.append(dock)
-  dock.classList.toggle("in-map", !!inMap)
+  dock.hidden = page === "mission"
 }
 addEventListener("hashchange", place); place()
