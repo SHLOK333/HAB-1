@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HAB-1 Verified Track</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+  :root { --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --text:#e6e8ec; --mute:#8b93a3;
+          --ok:#3ecf8e; --fake:#ff5c5c; --bad:#ffb14a; --unv:#9aa3b2; }
+  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+    --bg:#f6f7f9; --panel:#fff; --line:#dde1e7; --text:#1b1f27; --mute:#5c6573; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif }
+  header { padding:14px 16px; border-bottom:1px solid var(--line); display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center }
+  h1 { font-size:16px; margin:0; font-weight:650 }
+  .mute { color:var(--mute) }
+  select { background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:6px; padding:5px 8px; max-width:100% }
+  main { display:grid; grid-template-columns: 1fr 340px; height:calc(100vh - 58px) }
+  #map { height:100% }
+  aside { border-left:1px solid var(--line); background:var(--panel); overflow:auto; padding:12px 14px }
+  .stats { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:12px }
+  .stat { border:1px solid var(--line); border-radius:8px; padding:8px 10px }
+  .stat b { display:block; font-size:20px }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; vertical-align:middle }
+  table { width:100%; border-collapse:collapse; font-size:12.5px }
+  td, th { padding:5px 4px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap }
+  th { color:var(--mute); font-weight:500 }
+  .src { font-size:12px; margin-top:12px }
+  code { font-size:11.5px; word-break:break-all }
+  @media (max-width: 760px) { main { grid-template-columns:1fr; grid-template-rows: 55vh auto; height:auto }
+    aside { border-left:0; border-top:1px solid var(--line) } }
+</style>
+</head>
+<body>
+<header>
+  <h1>HAB-1 track, verified on the ground</h1>
+  <label class="mute">Session <select id="run"></select></label>
+  <span class="mute" id="status">loading from Arkiv...</span>
+</header>
+<main>
+  <div id="map"></div>
+  <aside>
+    <div class="stats">
+      <div class="stat"><span class="dot" style="background:var(--ok)"></span>Verified<b id="n-verified">0</b></div>
+      <div class="stat"><span class="dot" style="background:var(--fake)"></span>Fake, rejected<b id="n-fake">0</b></div>
+      <div class="stat"><span class="dot" style="background:var(--bad)"></span>Bad signature<b id="n-bad_signature">0</b></div>
+      <div class="stat"><span class="dot" style="background:var(--unv)"></span>Not checked<b id="n-unverified">0</b></div>
+    </div>
+    <p class="src" id="near-head" style="margin-top:0"><b>Click the map</b> <span class="mute">to list every packet heard within about 5 km of that point, from every session and receiver.</span></p>
+    <div id="near"></div>
+    <table><thead><tr><th>seq</th><th>T+min</th><th>alt m</th><th>verdict</th><th>heard by</th></tr></thead><tbody id="rows"></tbody></table>
+    <p class="src mute">Every point is read straight from the Arkiv testnet by this page: no server of ours is involved.
+      Each packet is owned by the wallet of the receiver that heard it. The data is a replay of the
+      HAB-1 flight of 31 Oct 2026 through the flight radios; a frame counts as verified only if the beacon's
+      Ed25519 signature covers it.</p>
+    <p class="src mute" id="receivers"></p>
+    <p class="src mute">Beacon key <code id="key">?</code></p>
+  </aside>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script type="module">
+import { createPublicClient } from "https://esm.sh/@arkiv-network/sdk@1.0.0"
+import { rabdi } from "https://esm.sh/@arkiv-network/sdk@1.0.0/chains"
+import { and, asc, desc, eq, gte, lte } from "https://esm.sh/@arkiv-network/sdk@1.0.0/query"
+import { bytes, defineSchema, dec, i32, str, u64 } from "https://esm.sh/@arkiv-network/sdk@1.0.0/schema"
+import { http } from "https://esm.sh/viem@2.57.14"
+
+// Same schemas as arkiv/schema.mjs. Keep them in step.
+const FLIGHT = "hab1-2026-10-31"
+const Packet = defineSchema("boscon.hab.packet", {
+  flight: str().indexed(), run: str().indexed(), beaconKey: str().indexed(), seq: u64().indexed(),
+  flightS: i32().indexed(), lat: dec().indexed(), lon: dec().indexed(), altM: i32().indexed(),
+  verdict: str().indexed(), receiver: str(), rssi: dec(), snr: dec(), frame: bytes(),
+  livePa: dec().optional(), liveC: dec().optional(),
+})
+const Run = defineSchema("boscon.hab.run", {
+  flight: str().indexed(), run: str().indexed(), beaconKey: str().indexed(), startedAt: u64().indexed(),
+  receiver: str(), note: str(),
+})
+
+// The public endpoint needs no key (it is rate limited; a 15 s refresh stays well inside it).
+const client = createPublicClient({ chain: rabdi({ accessKey: "" }), transport: http() })
+// Only this deployment's receivers (new wallets, 6 Nov 2026): ground station and two simulated receivers.
+const OWNERS = ["0x532cCE61F117A394D595E9fb7069f4D6CE3Bb047", "0xAE1796225FFdf537eF8122dA92ACDE3D1aE9b363", "0xeeeB58826006087868079C27159838a3B694721e"].map(a => a.toLowerCase())
+const mine = e => OWNERS.includes(String(e.$owner).toLowerCase())
+const COLORS = { verified: "#3ecf8e", fake: "#ff5c5c", bad_signature: "#ffb14a", unverified: "#9aa3b2" }
+
+const map = L.map("map").setView([17.9, 76.0], 9)
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18,
+  attribution: "&copy; OpenStreetMap contributors" }).addTo(map)
+let layer = L.layerGroup().addTo(map), fitted = false
+const $ = id => document.getElementById(id)
+
+async function loadRuns() {
+  const res = await client.select({ run: true, startedAt: true, receiver: true, $owner: true }).from(Run)
+    .where(eq("flight", FLIGHT)).orderBy(desc("startedAt")).limit(20).fetch()
+  const sel = $("run"), keep = sel.value || new URLSearchParams(location.search).get("run")
+  // several receivers each open the same session under their own wallet: list it once
+  const seen = new Set(), runs = res.entities.filter(mine).filter(r => !seen.has(r.run.value) && seen.add(r.run.value))
+  sel.innerHTML = runs.map(r => {
+    const t = new Date(Number(r.startedAt.value) * 1000).toLocaleString()
+    return `<option value="${r.run.value}">${r.run.value} (${t})</option>`
+  }).join("")
+  if (keep && [...sel.options].some(o => o.value === keep)) sel.value = keep
+  return sel.value
+}
+
+async function loadPackets(run) {
+  const rows = []
+  for (let off = 0; ; off += 100) {
+    const page = await client.select({ $key: true, $owner: true, seq: true, flightS: true, lat: true, lon: true,
+        altM: true, verdict: true, rssi: true, snr: true, receiver: true, beaconKey: true, livePa: true, liveC: true })
+      .from(Packet).where(eq("run", run)).orderBy(asc("seq")).limit(100).offset(off).fetch()
+    rows.push(...page.entities.filter(mine))
+    if (page.entities.length < 100) break
+  }
+  return rows
+}
+
+function draw(all) {
+  layer.clearLayers()
+  // One point per frame: the same frame heard by several receivers is one point that
+  // lists every receiver (and wallet) that vouched for it.
+  const groups = new Map()
+  for (const p of all) {
+    const k = `${p.seq.value}|${p.verdict.value}|${p.lat.value}|${p.lon.value}`
+    if (!groups.has(k)) groups.set(k, { ...p, heard: [] })
+    groups.get(k).heard.push({ receiver: p.receiver.value, owner: p.$owner, key: p.$key, rssi: p.rssi.value })
+  }
+  const rows = [...groups.values()]
+  const owners = new Set(all.map(p => p.$owner))
+  $("receivers").textContent = `${rows.length} frames, ${all.length} packets from ${owners.size} receiver wallet${owners.size === 1 ? "" : "s"}`
+  const counts = { verified: 0, fake: 0, bad_signature: 0, unverified: 0 }
+  // One line per pass of the flight: when flight time goes backwards the replay has
+  // started over, and joining landing to pad would draw a track that never happened.
+  const tracks = [[]]
+  let lastT = -Infinity
+  for (const p of rows) {
+    const v = p.verdict.value, ll = [Number(p.lat.value), Number(p.lon.value)]
+    counts[v] = (counts[v] ?? 0) + 1
+    if (v === "verified") {
+      if (p.flightS.value < lastT) tracks.push([])
+      lastT = p.flightS.value
+      tracks.at(-1).push(ll)
+    }
+    L.circleMarker(ll, { radius: v === "fake" ? 8 : 5, color: COLORS[v] ?? "#888", weight: 2,
+        fillOpacity: v === "fake" ? 0.9 : 0.6 })
+      .bindPopup(`<b>seq ${p.seq.value}: ${v.replace("_", " ")}</b><br>T+${(p.flightS.value / 60).toFixed(1)} min, ${p.altM.value} m<br>`
+        + (p.livePa?.value ? `live outside air on the payload now: ${(Number(p.livePa.value) / 100).toFixed(2)} hPa, ${p.liveC.value} C<br>` : "")
+        + `heard by ${p.heard.length} receiver${p.heard.length === 1 ? "" : "s"}, each under its own wallet:<br>`
+        + p.heard.map(h => `${h.receiver}${h.receiver.startsWith("sim") ? " (simulated)" : ""}, rssi ${h.rssi} dBm<br><code>${h.owner}</code><br>entity <code>${h.key}</code>`).join("<br>"))
+      .addTo(layer)
+  }
+  for (const t of tracks) if (t.length > 1) L.polyline(t, { color: COLORS.verified, weight: 3 }).addTo(layer)
+  if (!fitted && rows.length) { map.fitBounds(rows.map(p => [Number(p.lat.value), Number(p.lon.value)]), { padding: [30, 30] }); fitted = true }
+  for (const k in counts) { const el = $("n-" + k); if (el) el.textContent = counts[k] }
+  $("rows").innerHTML = rows.slice(-15).reverse().map(p =>
+    `<tr><td>${p.seq.value}</td><td>${(p.flightS.value / 60).toFixed(1)}</td><td>${p.altM.value}</td>`
+    + `<td><span class="dot" style="background:${COLORS[p.verdict.value] ?? "#888"}"></span>${p.verdict.value.replace("_", " ")}</td><td>${p.heard.length}</td></tr>`).join("")
+  if (rows[0]) $("key").textContent = rows[0].beaconKey.value
+}
+
+async function refresh() {
+  try {
+    const run = await loadRuns()
+    if (!run) { $("status").textContent = "no sessions on Arkiv yet"; return }
+    const rows = await loadPackets(run)
+    draw(rows)
+    $("status").textContent = `${rows.length} packets, read from Arkiv at ${new Date().toLocaleTimeString()}`
+  } catch (e) { $("status").textContent = "Arkiv read failed: " + (e.shortMessage ?? e.message) }
+}
+// "Heard near here": the indexed lat and lon let anyone ask Arkiv for a box on the map,
+// across every session and receiver, with no server of ours.
+let nearBox = null
+map.on("click", async (ev) => {
+  const { lat, lng } = ev.latlng, d = 0.045                       // about 5 km
+  if (nearBox) nearBox.remove()
+  nearBox = L.rectangle([[lat - d, lng - d], [lat + d, lng + d]], { color: "#6aa9ff", weight: 1, fillOpacity: 0.08 }).addTo(map)
+  $("near").innerHTML = '<p class="mute">asking Arkiv...</p>'
+  try {
+    const t0 = performance.now()
+    const res = await client.select({ run: true, seq: true, altM: true, verdict: true, receiver: true, $owner: true }).from(Packet)
+      .where(and(eq("flight", FLIGHT), gte("lat", dec((lat - d).toFixed(7))), lte("lat", dec((lat + d).toFixed(7))),
+                 gte("lon", dec((lng - d).toFixed(7))), lte("lon", dec((lng + d).toFixed(7)))))
+      .orderBy(desc("seq")).limit(100).fetch()
+    const ps = res.entities.filter(mine), ms = Math.round(performance.now() - t0)
+    const owners = new Set(ps.map(p => p.$owner)), runs = new Set(ps.map(p => p.run.value))
+    $("near").innerHTML = `<p class="src">${ps.length}${ps.length === 100 ? "+" : ""} packets near ${lat.toFixed(3)}, ${lng.toFixed(3)}: `
+      + `${runs.size} sessions, ${owners.size} receiver wallet${owners.size === 1 ? "" : "s"} (${ms} ms, straight from Arkiv)</p>`
+      + (ps.length ? `<table><thead><tr><th>session</th><th>seq</th><th>alt m</th><th>verdict</th><th>heard by</th></tr></thead><tbody>`
+        + ps.slice(0, 12).map(p => `<tr><td>${p.run.value}</td><td>${p.seq.value}</td><td>${p.altM.value}</td><td>${p.verdict.value.replace("_", " ")}</td><td>${p.receiver.value}</td></tr>`).join("")
+        + `</tbody></table>` : "")
+  } catch (e) { $("near").innerHTML = `<p class="mute">Arkiv read failed: ${e.shortMessage ?? e.message}</p>` }
+})
+
+$("run").addEventListener("change", () => { fitted = false; refresh() })
+refresh(); setInterval(refresh, 15000)
+</script>
+</body>
+</html>
