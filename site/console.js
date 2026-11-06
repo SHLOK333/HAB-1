@@ -107,7 +107,7 @@ function layers() {
   const L = [], live = S.mode === "live", t = S.t, lb = LABEL()
   const ghost = live || S.session !== "flight"
   const custom = S.flightNow && !S.flightNow.builtin
-  if (custom && S.flightNow.track?.length) L.push(new deck.PathLayer({ id: "flight-plan", data: [S.flightNow.track], getPath: d => d, getColor: [...C.track, 90], widthUnits: "pixels", getWidth: 1.5,
+  if (custom && S.flightNow.track?.length) L.push(new deck.PathLayer({ id: "flight-plan", data: [S.flightNow.track], getPath: d => d.map(p => [p[0], p[1], 0]), getColor: [...C.track, 90], widthUnits: "pixels", getWidth: 1.5,
     getDashArray: [4, 4], dashJustified: true, extensions: [new deck.PathStyleExtension({ dash: true })] }))
   if (S.layers.archive && !custom) {
     L.push(new deck.TripsLayer({ id: "archive", data: TRIP, getPath: d => d.path, getTimestamps: d => d.ts, currentTime: ghost ? T1 : t, trailLength: 1e7, fadeTrail: false,
@@ -143,7 +143,7 @@ function layers() {
   if (S.layers.wind) {
     const w = frames.length ? liveWinds() : SAMPLES.filter((s, i) => s.wind && s.flightS <= t && i % 3 === 0).map(s => ({ lat: s.lat, lon: s.lon, alt: s.wind.atAltM, speed: s.wind.speedMs, toward: s.wind.towardDeg }))
     L.push(new deck.IconLayer({ id: "winds", data: w, pickable: true, billboard: false, getIcon: () => ARROW, getPosition: d => [d.lon, d.lat, d.alt], getAngle: d => -d.toward,
-      sizeUnits: "meters", sizeMinPixels: 8, getSize: d => 900 + d.speed * 90, getColor: [...C.measured, 190] }))
+      sizeUnits: "pixels", getSize: d => 14 + Math.min(d.speed, 40) * 0.5, getColor: [...C.measured, 190] }))
   }
   // fixed marks
   const ft = custom ? S.flightNow.track : null
@@ -158,8 +158,49 @@ function layers() {
     L.push(new deck.ScatterplotLayer({ id: "head", data: [p], getPosition: d => d, radiusUnits: "pixels", getRadius: 7, getFillColor: C.s1, stroked: true, getLineColor: C.accent, lineWidthUnits: "pixels", getLineWidth: 2.5 }))
     L.push(new deck.TextLayer({ id: "head-label", data: [p], getPosition: d => d, getText: d => `${fmt(d[2])} m`, ...lb, getColor: C.accent, getBorderColor: [...C.accent, 160] }))
   }
-  return L
+  return L.concat(fxLayers())
 }
+// ---------------------------------------------------------------- event effects (each one is a real event)
+// A frame heard: a radio pulse from the balloon down to the ground station, and a ring on the balloon.
+// A batch verified: a wave of green rings. A forged frame: a red shockwave. A new flight: the route draws in.
+S.fx = []
+let fxRaf = 0
+function fxAdd(e, at) {
+  if (reduceMotion || (at && Date.now() - at > 15000)) return          // not for the backlog replayed on connect
+  S.fx.push({ ...e, t0: performance.now() + (e.delay ?? 0) }); if (S.fx.length > 80) S.fx.splice(0, S.fx.length - 80)
+  if (!fxRaf) fxRaf = requestAnimationFrame(fxStep)
+}
+function fxStep() {
+  const now = performance.now(); S.fx = S.fx.filter(e => now - e.t0 < e.dur)
+  overlay.setProps({ layers: layers() }); fxRaf = S.fx.length ? requestAnimationFrame(fxStep) : 0
+}
+function groundPos() { const t = S.flightNow && !S.flightNow.builtin && S.flightNow.track; return t?.length ? [t[0][0], t[0][1], 0] : [F.pad.lon, F.pad.lat, 0] }
+const ease = x => 1 - (1 - x) ** 3
+function fxLayers() {
+  if (!S.fx.length) return []
+  const now = performance.now(), g = groundPos(), on = S.fx.filter(e => now >= e.t0), out = []
+  const k = e => Math.min(1, (now - e.t0) / e.dur)
+  const tx = on.filter(e => e.k === "tx")
+  if (tx.length) out.push(new deck.TripsLayer({ id: "fx-beam", data: tx, currentTime: now, trailLength: 420, fadeTrail: true, capRounded: true, jointRounded: true,
+    getPath: e => Array.from({ length: 24 }, (_, i) => { const f = i / 23; return [e.from[0] + (g[0] - e.from[0]) * f, e.from[1] + (g[1] - e.from[1]) * f, e.from[2] * (1 - f)] }),
+    getTimestamps: e => Array.from({ length: 24 }, (_, i) => e.t0 + (i / 23) * e.dur * 0.7), getColor: C.measured, widthUnits: "pixels", getWidth: 4, updateTriggers: { getTimestamps: tx.map(e => e.t0).join() } }))
+  const rings = []
+  for (const e of on) {
+    const x = ease(k(e)), a = Math.round(255 * (1 - k(e)))
+    if (e.k === "tx") rings.push({ p: e.from, r: 6 + 54 * x, c: [...C.measured, a], w: 2 })
+    if (e.k === "sig") rings.push({ p: e.at, r: 8 + 110 * x, c: [...C.accent, a], w: 3 }, { p: e.at, r: 4 + 60 * x, c: [...C.accent, a], w: 1.5 })
+    if (e.k === "ok") rings.push({ p: e.at, r: 3 + 30 * x, c: [...C.nominal, a], w: 2.5 })
+    if (e.k === "bad") for (const d of [0, 0.18, 0.36]) { const y = Math.max(0, Math.min(1, (k(e) - d) / (1 - d))); if (y > 0) rings.push({ p: e.at, r: 6 + 170 * ease(y), c: [...C.alarm, Math.round(255 * (1 - y))], w: 3.5 }) }
+  }
+  if (rings.length) out.push(new deck.ScatterplotLayer({ id: "fx-rings", data: rings, getPosition: d => d.p, getRadius: d => d.r, radiusUnits: "pixels", stroked: true, filled: false,
+    getLineColor: d => d.c, getLineWidth: d => d.w, lineWidthUnits: "pixels", updateTriggers: { getRadius: now, getLineColor: now } }))
+  const bad = on.filter(e => e.k === "bad" && k(e) < 0.5)
+  if (bad.length) out.push(new deck.ScatterplotLayer({ id: "fx-flash", data: bad, getPosition: e => e.at, getRadius: e => 10 + 20 * k(e), radiusUnits: "pixels", getFillColor: e => [...C.alarm, Math.round(200 * (1 - 2 * k(e)))], updateTriggers: { getRadius: now, getFillColor: now } }))
+  const route = on.find(e => e.k === "route" && S.flightNow?.track?.length)
+  if (route) { const tr = S.flightNow.track; out.push(new deck.TripsLayer({ id: "fx-route", data: [tr], getPath: d => d.map(p => [p[0], p[1], 0]), getTimestamps: d => d.map((_, i) => route.t0 + (i / (d.length - 1)) * route.dur * 0.85), currentTime: now, trailLength: 1e9, fadeTrail: false, getColor: C.track, widthUnits: "pixels", getWidth: 4 })) }
+  return out
+}
+
 let raf = 0
 const draw = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; overlay.setProps({ layers: layers() }); renderConductor() }) }
 
@@ -415,16 +456,21 @@ function onRadio(e, at) {
   if (e.ev === "data") {
     const f = { ...(S.frames.get(e.seq) ?? {}), ...frameFrom(e), heardAt: at }
     S.frames.set(e.seq, f); S.lastFrame = f; followTo(f.lat, f.lon); prData(e, at)
+    fxAdd({ k: "tx", from: [e.lon, e.lat, e.alt_m], dur: 1500 }, at)
     flowPacket("beacon-ground", "measured", () => flowPacket("ground-station", "measured", () => flash("station", "info"), 700))
     log("radio", `seq ${e.seq} heard · ${tPlus(e.flight_s)} · ${fmt(e.alt_m)} m · <span class="mono">RSSI ${e.rssi} SNR ${e.snr}${e.live_src === "pi" ? ` · Pi baro ${e.live_hpa} hPa` : ""}</span> · <span class="warn">awaiting signature</span>`, { at, seq: e.seq })
   } else if (e.ev === "sig") {
     S.sigs.push(e); if (S.sigs.length > 200) S.sigs.shift(); prSig(e, at)
+    if (S.lastFrame) fxAdd({ k: "sig", at: [S.lastFrame.lon, S.lastFrame.lat, S.lastFrame.altM], dur: 1700 }, at)
     log("radio", `batch signature seq ${e.first}–${e.first + e.count - 1} · boot ${e.boot} · ${e.valid ? (e.replay ? '<span class="bad">REPLAY of an older batch</span>' : '<span class="ok">Ed25519 valid</span>') : '<span class="bad">INVALID</span>'}`, { at })
   } else if (e.ev === "verdict") {
     const f = { ...(S.frames.get(e.seq) ?? {}), ...frameFrom(e), verdict: e.verdict, heardAt: S.frames.get(e.seq)?.heardAt ?? at }
     S.frames.set(e.seq, f)
     const bad = /REJECTED/.test(e.verdict)
     flash("station", bad ? "bad" : "ok")
+    const now = Date.now(); if (now - (S.okAt ?? 0) > 1500) S.okN = 0; S.okAt = now
+    if (bad) fxAdd({ k: "bad", at: [e.lon, e.lat, e.alt_m], dur: 2600 }, at)
+    else if (e.verdict === "VERIFIED") fxAdd({ k: "ok", at: [e.lon, e.lat, e.alt_m], dur: 1200, delay: (S.okN++) * 140 }, at)
     if (bad) toast("bad", "Forged frame rejected", `seq ${e.seq} claimed ${fmt(e.alt_m)} m · ${e.verdict} · never published`)
     log("radio", `seq ${e.seq} <span class="${VERDICT_CLASS(e.verdict)}">${esc(e.verdict)}</span>${bad ? " · forged or tampered frame dropped, never published" : ""}`, { at, seq: e.seq })
   } else if (e.ev === "loop") {
@@ -980,31 +1026,44 @@ function prInit() {
   } else $("pr-bytes").innerHTML = `<p class="pr-empty">Waiting for the next frame from the beacon…</p>`
 }
 
-// ---------------------------------------------------------------- flight picker (what the real beacon flies)
+// ---------------------------------------------------------------- flight chooser (what the real beacon flies)
 S.flightNow = { name: "HAB-1 31 Oct 2026", builtin: true }
-function flightLabel() { $("t-flight").textContent = `Flight: ${S.flightNow.builtin ? "HAB-1" : S.flightNow.name.replace(/^Sim /, "")} ▾` }
-function renderFlightPop() {
-  const fs = PAGES?.catalog?.() ?? [], groups = [["ours", "Our flight (built into the beacon)"], ["sim", "Simulated · CUSF Tawhiri"], ["public", "Public balloons near India · SondeHub"]]
-  const live = S.mode === "live"
-  $("flightpop").innerHTML = `<p class="fp-note">${live ? "Pick a flight: the real beacon transmits it over LoRa, signed and verified like HAB-1's." : "Picking a flight for the beacon works on the ground station (live mode)."}</p>` +
-    groups.map(([g, t]) => { const items = fs.filter(f => f.group === g && f.pts.some(p => Number.isFinite(p[3])))
-      return `<div class="fp-group"><h4>${t}</h4>${items.length ? items.map(f => `<button type="button" class="fp-item${(f.id === "hab1" && S.flightNow.builtin) || f.name.replace(/^Simulated · /, "Sim ").slice(0, 40) === S.flightNow.name ? " on" : ""}" data-id="${f.id}" ${live ? "" : "disabled"}><b>${esc(f.name)}</b><small>${esc(f.sub)} · ${fmt(f.maxAlt / 1000, 1)} km</small></button>`).join("") : `<p class="fp-note">${g === "ours" ? "" : "loading…"}</p>`}</div>` }).join("")
-  for (const b of $("flightpop").querySelectorAll(".fp-item")) b.onclick = async () => {
-    for (const o of $("flightpop").querySelectorAll(".fp-item")) o.disabled = true
-    b.querySelector("small").textContent = "sending to the beacon…"
-    const r = await PAGES.fly(b.dataset.id)
-    if (r?.ok) { $("flightpop").hidden = true; $("t-flight").setAttribute("aria-expanded", "false") } else renderFlightPop()
-  }
+function flightLabel() {
+  $("fs-cur").innerHTML = `Now flying: <b>${esc(S.flightNow.builtin ? "HAB-1 · 31 Oct 2026" : S.flightNow.name)}</b>${S.flightNow.builtin ? "" : ` · ${S.flightNow.samples} points · peak ${fmt(S.flightNow.peakM)} m`}`
 }
-$("t-flight").onclick = () => {
-  const open = $("flightpop").hidden; $("flightpop").hidden = !open; $("t-flight").setAttribute("aria-expanded", open)
-  if (open) { PAGES?.loadCatalog?.(); renderFlightPop(); const iv = setInterval(() => { if ($("flightpop").hidden) clearInterval(iv); else renderFlightPop() }, 2500) }
+let fsCount = -1
+function renderFlightSelect() {
+  const fs = (PAGES?.catalog?.() ?? []).filter(f => f.pts.some(p => Number.isFinite(p[3])))
+  if (fs.length === fsCount) return; fsCount = fs.length
+  const keep = $("fs-select").value
+  const groups = [["ours", "Our flight"], ["sim", "Simulated · CUSF Tawhiri"], ["public", "Public balloons near India · SondeHub"]]
+  $("fs-select").innerHTML = groups.map(([g, t]) => { const items = fs.filter(f => f.group === g)
+    return items.length ? `<optgroup label="${t}">${items.map(f => `<option value="${f.id}">${esc(f.id === "hab1" ? "HAB-1 · 31 Oct 2026 (built in)" : f.name.replace(/^Simulated · /, ""))} · ${fmt(f.maxAlt / 1000, 1)} km</option>`).join("")}</optgroup>` : "" }).join("")
+    || `<option value="hab1">HAB-1 · 31 Oct 2026 (built in)</option>`
+  if (keep && [...$("fs-select").options].some(o => o.value === keep)) $("fs-select").value = keep
+  $("fs-note").textContent = `${fs.length} flights`
+}
+function initFlightChooser() {
+  const live = S.mode === "live"
+  $("fs-go").disabled = !live; $("fs-select").disabled = !live
+  if (!live) { $("fs-cur").textContent = "Choosing a flight for the beacon works on the ground station."; return }
+  PAGES?.loadCatalog?.(); renderFlightSelect()
+  let n = 0; const iv = setInterval(() => { renderFlightSelect(); if (++n > 40) clearInterval(iv) }, 3000)
+  $("fs-go").onclick = async () => {
+    const id = $("fs-select").value; $("fs-go").disabled = true; $("fs-go").textContent = "Sending…"
+    await PAGES.fly(id)
+    $("fs-go").disabled = false; $("fs-go").textContent = "Fly it"
+  }
 }
 function onFlight(f) {
   S.flightNow = f; flightLabel()
   S.frames.clear(); S.sigs = []; S.predictions = []; S.lastFrame = null
-  if (!f.builtin && f.track?.length) { const lons = f.track.map(p => p[0]), lats = f.track.map(p => p[1]); map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 80, maxZoom: 9, duration: 800 }) }
-  else fit(800)
+  if (!f.builtin && f.track?.length) {
+    const lons = f.track.map(p => p[0]), lats = f.track.map(p => p[1])
+    const cam = map.cameraForBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 90 })
+    if (!reduceMotion) map.flyTo({ ...cam, zoom: Math.min(cam.zoom, 9), pitch: 62, bearing: -35, duration: 2600, curve: 1.6, essential: true }); else map.jumpTo({ ...cam })
+    fxAdd({ k: "route", dur: 3200 })
+  } else fit(800)
   log("ops", f.builtin ? "the beacon is back on the built-in HAB-1 replay" : `the beacon now flies <b>${esc(f.name)}</b>: ${f.samples} samples, one every ${f.stepS} s of flight, peak ${fmt(f.peakM)} m. Landing re-prediction is paused (our cached winds are for HAB-1's day and pad)`)
   refresh()
 }
@@ -1055,6 +1114,7 @@ function route() {
   PAGES?.show(page)
 }
 addEventListener("hashchange", route)
+initFlightChooser()
 for (const li of document.querySelectorAll(".links [data-go]")) li.onclick = () => { location.hash = `#/${li.dataset.go}` }
 route()
 addEventListener("resize", () => { drawScrub(); renderPlots() })

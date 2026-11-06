@@ -49,6 +49,15 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
 
 <main class="shell">
   <aside class="rail" aria-label="Systems and operations">
+    <section class="panel flightsel">
+      <header class="ph"><h2>Flight on the beacon</h2><span class="ph-note" id="fs-note"></span></header>
+      <div class="fs-body">
+        <label class="sr" for="fs-select">Choose a flight</label>
+        <select class="select" id="fs-select"><option>HAB-1 · 31 Oct 2026 (built in)</option></select>
+        <button class="btn primary" id="fs-go" type="button">Fly it</button>
+        <p class="fs-cur" id="fs-cur">Now flying: <b>HAB-1 · 31 Oct 2026</b></p>
+      </div>
+    </section>
     <section class="panel systems">
       <header class="ph"><h2>Systems</h2><span class="ph-note" id="sys-note">offline</span></header>
       <div id="systems"></div>
@@ -90,8 +99,6 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
         <button class="tool on" id="t-3d" type="button" aria-pressed="true">3D</button>
         <button class="tool on" id="t-follow" type="button" aria-pressed="true">Follow</button>
         <button class="tool" id="t-fit" type="button">Fit</button>
-        <button class="tool flightbtn" id="t-flight" type="button" aria-expanded="false" aria-controls="flightpop" title="Choose the flight the real beacon transmits">Flight: HAB-1 ▾</button>
-        <div class="pop flightpop" id="flightpop" hidden></div>
         <button class="tool" id="t-layers" type="button" aria-expanded="false" aria-controls="layers">Layers</button>
         <div class="pop" id="layers" hidden>
           <label><input type="checkbox" data-l="archive" checked> 31 Oct flight track</label>

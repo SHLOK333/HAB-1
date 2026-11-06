@@ -59,7 +59,7 @@ a:hover { text-decoration: underline; }
 .tabs [role="tab"][aria-selected="true"] { color: var(--text); background: var(--s1); box-shadow: inset 0 -2px 0 var(--accent); }
 .count { font-size: 11px; color: var(--text-3); font-weight: 400; }
 .pane { overflow: auto; min-height: 0; flex: 1; }
-.rail { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 1px; background: var(--line); min-height: 0; }
+.rail { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 1px; background: var(--line); min-height: 0; }
 .stage { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 34px minmax(0, 1fr) 34px 248px; gap: 1px; background: var(--line); min-width: 0; min-height: 0; }
 .inspector .pane { padding: 12px; }
 
@@ -508,3 +508,8 @@ body[data-page="hedera"] #pg-hedera, body[data-page="arkiv"] #pg-arkiv { display
 .fp-item.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, transparent); }
 .fp-item:disabled { cursor: default; opacity: .7; }
 .fp-item b { font-size: 12px; font-weight: 600; } .fp-item small { font-size: 11px; color: var(--text-3); }
+.flightsel .fs-body { padding: 10px 12px 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.flightsel .fs-body .select { width: 100%; height: 30px; font-size: 12px; }
+.flightsel .fs-body .btn { width: auto; padding: 0 14px; height: 30px; }
+.flightsel .fs-cur { grid-column: 1 / -1; margin: 0; font-size: 11.5px; color: var(--text-2); }
+.flightsel .fs-cur b { color: var(--text); font-weight: 600; }
