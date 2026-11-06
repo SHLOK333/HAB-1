@@ -98,6 +98,7 @@ function addFix(e) {
   predictFrom(state.fixes.at(-1))
 }
 function predictFrom(fix) {
+  if (!state.flight.builtin) return   // our cached GFS is for HAB-1's day and pad only
   const i = state.fixes.indexOf(fix), prev = state.fixes[i - 1]
   if (!prev || fix.flightS - prev.flightS > 900) return  // direction unknown: no fix, or a gap (lost batch) that may span burst
   const ascending = fix.altM >= prev.altM
@@ -257,6 +258,67 @@ const ACTIONS = {
   analyze: () => ["node", ["--env-file=../.env", "analytics.mjs"], path.join(ROOT, "mission")],
 }
 let running = null
+// ---------------------------------------------------------------- what the beacon flies
+// Any flight (a Tawhiri simulation, a public balloon from SondeHub) can be uploaded to the beacon
+// over Wi-Fi; it then transmits it exactly like the built-in HAB-1 replay: signed, batched,
+// verified on the ground. Up to 180 samples of 16 bytes ("flight new/add/go" in the firmware).
+state.flight = { name: "HAB-1 31 Oct 2026", builtin: true }
+const CUSTOM_MAX = 180
+function isa(h) {                                  // standard atmosphere: pressure (0.1 hPa), temperature (0.01 C)
+  const t = h < 11000 ? 15 - 0.0065 * h : h < 20000 ? -56.5 : -56.5 + 0.001 * (h - 20000)
+  const p = h < 11000 ? 1013.25 * (1 - 2.25577e-5 * h) ** 5.25588 : 226.32 * Math.exp(-(h - 11000) / 6341.6)
+  return { pDhPa: Math.max(0, Math.round(p * 10)), tCc: Math.round(t * 100) }
+}
+function resample(points) {
+  const pts = points.filter(p => [p[0], p[1], p[2], p[3]].every(Number.isFinite)).sort((a, b) => a[0] - b[0])
+  if (pts.length < 2) throw new Error("the flight needs at least two timed points")
+  const t0 = pts[0][0], dur = (pts.at(-1)[0] - t0) / 1000
+  const step = Math.min(Math.max(60, Math.ceil(dur / (CUSTOM_MAX - 2))), Math.floor(32000 / (CUSTOM_MAX - 1)))
+  const n = Math.min(CUSTOM_MAX - 1, Math.floor(dur / step) + 1), out = []
+  const at = t => { let i = pts.findIndex(p => p[0] >= t); if (i <= 0) return pts[Math.max(i, 0)]; const a = pts[i - 1], b = pts[i], k = (t - a[0]) / ((b[0] - a[0]) || 1); return [t, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k, a[3] + (b[3] - a[3]) * k] }
+  out.push({ flightS: -60, ...pick(pts[0]) })     // on the pad first, as HAB-1's replay does: receivers reset at a new launch
+  for (let i = 0; i < n; i++) out.push({ flightS: i * step, ...pick(at(t0 + i * step * 1000)) })
+  return { samples: out, step }
+  function pick(p) { return { lat: p[1], lon: p[2], alt: Math.max(0, Math.round(p[3])) } }
+}
+function packSample(s) {
+  const b = Buffer.alloc(16), a = isa(s.alt)
+  b.writeInt16LE(s.flightS, 0); b.writeInt32LE(Math.round(s.lat * 1e7), 2); b.writeInt32LE(Math.round(s.lon * 1e7), 6)
+  b.writeUInt16LE(Math.min(65535, s.alt), 10); b.writeUInt16LE(a.pDhPa, 12); b.writeInt16LE(a.tCc, 14)
+  return b.toString("hex")
+}
+async function sendToBeacon(lines) {
+  const ip = await beaconOnWifi(); if (!ip) throw new Error("the beacon is not on Wi-Fi (open the iPhone's Personal Hotspot screen)")
+  return new Promise((resolve, reject) => {
+    let out = ""; const sock = net.connect({ host: ip, port: 2323 }, async () => {
+      for (const l of lines) { sock.write(l + "\n"); await new Promise(r => setTimeout(r, 150)) }
+      setTimeout(() => { sock.end(); resolve(out) }, 2500)
+    })
+    sock.on("data", d => (out += d)); sock.on("error", reject); sock.setTimeout(30000, () => { sock.destroy(); reject(new Error("beacon timed out")) })
+  })
+}
+async function flyFlight(body) {
+  if (body.builtin) {
+    const out = await sendToBeacon(["flight builtin"])
+    if (!/back to the built-in/.test(out)) throw new Error("the beacon did not confirm")
+    state.flight = { name: "HAB-1 31 Oct 2026", builtin: true }
+  } else {
+    const { samples, step } = resample(body.points ?? [])
+    const name = String(body.name ?? "uploaded flight").replace(/[^\x20-\x7e]/g, "").slice(0, 40)
+    const lines = [`flight new ${samples.length} ${name}`]
+    for (let i = 0; i < samples.length; i += 5) lines.push(`flight add ${i} ${samples.slice(i, i + 5).map(packSample).join("")}`)
+    lines.push("flight go")
+    const out = await sendToBeacon(lines)
+    if (!/now flying/.test(out)) throw new Error(`the beacon did not switch (${(out.match(/flight: [^\n]*/g) ?? []).at(-1) ?? "no answer"})`)
+    const peak = samples.reduce((m, s) => Math.max(m, s.alt), 0)
+    state.flight = { name, builtin: false, samples: samples.length, stepS: step, peakM: peak, landing: { lat: samples.at(-1).lat, lon: samples.at(-1).lon },
+      track: samples.map(s => [+s.lon.toFixed(5), +s.lat.toFixed(5), s.alt]) }
+  }
+  state.fixes = []; state.prediction = null; state.lastFixS = null
+  send("flight", state.flight)
+  return state.flight
+}
+
 // Forged frame, timed for a live audience. The beacon sends the fake right after its next
 // data frame, and the fake is only judged when that batch's SIG frame arrives. Armed while
 // the batch's 5th frame (seq % 6 == 4) is the latest, the fake rides with the 6th and the
@@ -328,7 +390,14 @@ http.createServer((req, res) => {
   }
   if (url.pathname === "/api/state") {
     res.writeHead(200, { "content-type": "application/json" })
-    return res.end(JSON.stringify({ station: true, session: state.session, counts: state.counts, fixes: state.fixes, prediction: state.prediction, profile: PROFILE }))
+    return res.end(JSON.stringify({ station: true, session: state.session, counts: state.counts, fixes: state.fixes, prediction: state.prediction, profile: PROFILE, flight: state.flight }))
+  }
+  if (url.pathname === "/api/flight" && req.method === "POST") {
+    let body = ""; req.on("data", c => (body += c)); req.on("end", async () => {
+      let b = {}; try { b = JSON.parse(body || "{}") } catch {}
+      try { const f = await flyFlight(b); res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify({ ok: true, flight: { ...f, track: undefined } })) }
+      catch (e) { res.writeHead(409, { "content-type": "application/json" }); res.end(JSON.stringify({ ok: false, error: e.message })) }
+    }); return
   }
   if (url.pathname.startsWith("/api/cmd/") && req.method === "POST") {
     const name = url.pathname.slice(9)
