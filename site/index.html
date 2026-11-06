@@ -70,10 +70,32 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
       <button role="tab" id="v-map" aria-selected="true" data-v="map">Map</button>
       <button role="tab" id="v-flow" aria-selected="false" data-v="flow">System flow</button>
       <button role="tab" id="v-split" aria-selected="false" data-v="split">Split</button>
+      <button role="tab" id="v-proto" aria-selected="false" data-v="protocol">Protocol</button>
       <span class="viewbar-note" id="viewbar-note"></span>
     </div>
     <div class="center" id="center" data-view="map">
     <div class="flowwrap" id="flowwrap" aria-label="Live system flow"><svg id="flow-svg" aria-hidden="true"></svg><div id="flow-nodes"></div></div>
+    <div class="protowrap" id="protowrap" aria-label="Frames as the ground receiver hears them">
+      <div class="pr-air">
+        <div class="pr-end"><span class="pr-node" id="pr-tx"></span><div><b>Beacon</b><small>payload · Heltec V3 · Ed25519</small></div></div>
+        <div class="pr-lane" id="pr-lane"><span class="pr-lane-label mono">LoRa 866.1 MHz · SF9 · 125 kHz</span><span class="pr-lane-note mono" id="pr-lane-note">waiting for the next frame</span></div>
+        <div class="pr-end right"><div><b>Ground receiver</b><small>Heltec V3 · USB · verifier</small></div><span class="pr-node" id="pr-rx"></span></div>
+      </div>
+      <section class="pr-card">
+        <header><b id="pr-ftitle">Frame</b><span class="mono" id="pr-fmeta"></span></header>
+        <div class="pr-bytes mono" id="pr-bytes" aria-label="Frame bytes"></div>
+        <div class="pr-fields" id="pr-fields"></div>
+      </section>
+      <section class="pr-card">
+        <header><b id="pr-btitle">Batch</b><span class="mono" id="pr-bmeta"></span></header>
+        <div class="pr-slots" id="pr-slots"></div>
+        <div class="pr-proof mono" id="pr-proof"></div>
+      </section>
+      <section class="pr-card pr-hist-card">
+        <header><b>Signed batches</b><span class="mono">checked again in this browser · SHA-256 and Ed25519 by WebCrypto</span></header>
+        <ol class="pr-hist" id="pr-hist"></ol>
+      </section>
+    </div>
     <div class="mapwrap">
       <div id="map" aria-label="Map of the flight"></div>
       <div class="maptools" role="toolbar" aria-label="Map">
