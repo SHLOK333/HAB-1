@@ -1,0 +1,173 @@
+<!doctype html>
+<!--
+THESIS: A ground-station console, not a showcase page. Map, event log and inspector are the product; refuses the poster/landing-page treatment.
+OWN-WORLD: Professional telemetry tooling (Foxglove Studio, NASA Open MCT, SondeHub tracker): graphite shell, 1px rules, 13px system UI, monospaced values, colour only for state (nominal/caution/alarm, measured/predicted).
+STORY: The operator runs the live hardware from here; a judge sees frames arrive over LoRa, signatures verify, a fake frame get rejected, the landing re-predicted, data land on Arkiv, a sale settle on Hedera. Offline, the same console replays the flight and recorded sessions from Arkiv.
+FIRST VIEWPORT: top bar with mode, session, link health and UTC clock; Systems + Operations rail left; 3D map centre with time conductor and event log dock below; inspector right.
+FORM: brief-pinned reference class (professional telemetry software), no concept roll.
+-->
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HAB-1 Ground Station</title>
+<meta name="description" content="Ground station console for the HAB-1 balloon: live LoRa telemetry verified on the ground, CUSF Tawhiri landing prediction, Arkiv data, Hedera x402 sales and 0G analysis.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Text:wght@400;500;600;700&family=Red+Hat+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="console.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="5.5"/><path d="M12 13.5v4m-3 3h6l-3-3z"/></svg>
+    <strong>HAB-1</strong><span>Ground station</span>
+  </div>
+  <div class="sess">
+    <span class="mode" id="mode" data-mode="archive">Archive</span>
+    <label class="sr" for="session">Session</label>
+    <select id="session" class="select"><option value="flight">31 Oct 2026 flight log</option></select>
+  </div>
+  <dl class="metrics mono" id="metrics" aria-label="Session metrics"></dl>
+  <ul class="links" id="links" aria-label="Link health">
+    <li data-k="radio"><i></i>Radio</li><li data-k="payload"><i></i>Payload</li><li data-k="arkiv"><i></i>Arkiv</li><li data-k="hedera"><i></i>Hedera</li><li data-k="zerog"><i></i>0G</li>
+  </ul>
+  <div class="clock mono" id="clock" aria-label="UTC time">--:--:-- UTC</div>
+  <button class="icon-btn" id="theme" type="button" aria-label="Switch to light theme" title="Theme">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3a7 7 0 1 0 0 14V3z"/><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+  </button>
+</header>
+
+<main class="shell">
+  <aside class="rail" aria-label="Systems and operations">
+    <section class="panel systems">
+      <header class="ph"><h2>Systems</h2><span class="ph-note" id="sys-note">offline</span></header>
+      <div id="systems"></div>
+    </section>
+    <section class="panel runbook">
+      <header class="ph"><h2>Demo runbook</h2><span class="ph-note mono" id="rb-note">0 / 8</span></header>
+      <ol id="runbook"></ol>
+    </section>
+    <section class="panel ops">
+      <header class="ph"><h2>Operations</h2><span class="ph-note" id="ops-note"></span></header>
+      <div class="ops-body">
+        <div class="op-row"><button class="btn primary" id="op-start" type="button">Start session</button><button class="btn" id="op-stop" type="button">Stop</button></div>
+        <button class="btn danger" id="op-attack" type="button" title="The beacon transmits one forged frame; the ground must reject it">Inject forged frame</button>
+        <div class="op-row">
+          <button class="btn" id="op-buy" type="button" title="An agent pays 0.01 HBAR over x402 (HTTP) for measured wind">Buy wind · x402</button>
+          <label class="sr" for="op-alt">Altitude</label><input class="input mono" id="op-alt" type="number" value="15000" step="1000" min="1000" max="19000" aria-label="Altitude in metres">
+        </div>
+        <button class="btn" id="op-radio" type="button" title="x402 over LoRa: 402 from the beacon, payment signed on the ground board, settled on Hedera">Buy over radio · LoRa x402</button>
+        <button class="btn" id="op-analyze" type="button" title="Arkiv query → 0G model → insight stored on Arkiv">Run 0G analysis</button>
+        <p class="ops-hint" id="ops-hint"></p>
+      </div>
+    </section>
+  </aside>
+
+  <section class="stage">
+    <div class="viewbar" role="tablist" aria-label="Centre view">
+      <button role="tab" id="v-map" aria-selected="true" data-v="map">Map</button>
+      <button role="tab" id="v-flow" aria-selected="false" data-v="flow">System flow</button>
+      <button role="tab" id="v-split" aria-selected="false" data-v="split">Split</button>
+      <span class="viewbar-note" id="viewbar-note"></span>
+    </div>
+    <div class="center" id="center" data-view="map">
+    <div class="flowwrap" id="flowwrap" aria-label="Live system flow"><svg id="flow-svg" aria-hidden="true"></svg><div id="flow-nodes"></div></div>
+    <div class="mapwrap">
+      <div id="map" aria-label="Map of the flight"></div>
+      <div class="maptools" role="toolbar" aria-label="Map">
+        <button class="tool on" id="t-3d" type="button" aria-pressed="true">3D</button>
+        <button class="tool on" id="t-follow" type="button" aria-pressed="true">Follow</button>
+        <button class="tool" id="t-fit" type="button">Fit</button>
+        <button class="tool" id="t-layers" type="button" aria-expanded="false" aria-controls="layers">Layers</button>
+        <div class="pop" id="layers" hidden>
+          <label><input type="checkbox" data-l="archive" checked> 31 Oct flight track</label>
+          <label><input type="checkbox" data-l="received" checked> Received frames</label>
+          <label><input type="checkbox" data-l="prediction" checked> Predicted course</label>
+          <label><input type="checkbox" data-l="hindcast"> Pre-flight forecast</label>
+          <label><input type="checkbox" data-l="landings"> Predicted landings</label>
+          <label><input type="checkbox" data-l="wind" checked> Measured wind</label>
+          <label><input type="checkbox" data-l="forecast"> Tonight's Tawhiri forecast</label>
+        </div>
+      </div>
+      <div class="maplegend" aria-hidden="true">
+        <span><i class="lg-track"></i>Flown</span><span><i class="lg-pred"></i>Predicted</span><span><i class="lg-wind"></i>Wind</span><span><i class="lg-bad"></i>Rejected</span>
+      </div>
+    </div>
+    </div>
+    <div class="conductor">
+      <button class="icon-btn" id="play" type="button" aria-label="Play"><svg viewBox="0 0 20 20" aria-hidden="true"><path id="play-ico" d="M6 4l10 6-10 6z"/></svg></button>
+      <select class="select sm" id="speed" aria-label="Playback speed"><option value="30">30×</option><option value="120" selected>120×</option><option value="480">480×</option></select>
+      <span class="mono tpos" id="tpos">T+00:00</span>
+      <div class="scrub" id="scrub" role="slider" tabindex="0" aria-label="Flight time" aria-valuemin="-60" aria-valuemax="7500"><svg id="scrub-svg" preserveAspectRatio="none" aria-hidden="true"></svg><div class="head" id="head"></div></div>
+      <span class="live-pill" id="livepill" hidden>LIVE</span>
+    </div>
+    <div class="dock panel">
+      <header class="ph tabs" role="tablist" aria-label="Dock">
+        <button role="tab" aria-selected="true" aria-controls="d-tx" id="dt-tx">Transactions <span class="count mono" id="tx-count">0</span></button>
+        <button role="tab" aria-selected="false" aria-controls="d-log" id="dt-log">Event log <span class="count mono" id="log-count">0</span></button>
+        <button role="tab" aria-selected="false" aria-controls="d-plots" id="dt-plots">Plots</button>
+        <button role="tab" aria-selected="false" aria-controls="d-frames" id="dt-frames">Frames</button>
+        <div class="ph-tools" id="log-filters" role="group" aria-label="Log sources">
+          <button class="chip on" data-src="radio">Radio</button><button class="chip on" data-src="payload">Payload</button><button class="chip on" data-src="arkiv">Arkiv</button><button class="chip on" data-src="hedera">Hedera</button><button class="chip on" data-src="model">Model</button><button class="chip on" data-src="ops">Ops</button>
+        </div>
+      </header>
+      <div class="pane txpane" id="d-tx" role="tabpanel" aria-labelledby="dt-tx">
+        <div class="txsum mono" id="tx-sum"></div>
+        <table class="grid txgrid"><thead><tr><th>Time</th><th>Chain</th><th>Action</th><th>What</th><th>Status</th><th>Confirmation</th><th>Cost</th><th>Hash</th></tr></thead><tbody id="tx-body"></tbody></table>
+      </div>
+      <div class="pane log" id="d-log" role="tabpanel" aria-labelledby="dt-log" hidden><ol id="log"></ol></div>
+      <div class="pane plots" id="d-plots" role="tabpanel" aria-labelledby="dt-plots" hidden>
+        <figure><figcaption>Altitude <span class="mono">m</span></figcaption><svg id="pl-alt" preserveAspectRatio="none"></svg></figure>
+        <figure><figcaption>Link <span class="mono">RSSI dBm · SNR dB</span></figcaption><svg id="pl-link" preserveAspectRatio="none"></svg></figure>
+        <figure><figcaption>Predicted miss <span class="mono">km</span></figcaption><svg id="pl-miss" preserveAspectRatio="none"></svg></figure>
+      </div>
+      <div class="pane frames" id="d-frames" role="tabpanel" aria-labelledby="dt-frames" hidden>
+        <table class="grid"><thead><tr><th>Seq</th><th>T+</th><th>Alt m</th><th>Lat</th><th>Lon</th><th>RSSI</th><th>SNR</th><th>Payload P/T</th><th>Verdict</th><th>Frame (28 B)</th></tr></thead><tbody id="frames"></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <aside class="inspector panel" aria-label="Inspector">
+    <header class="ph tabs" role="tablist" aria-label="Inspector">
+      <button role="tab" aria-selected="true" aria-controls="i-fix" id="it-fix">Fix</button>
+      <button role="tab" aria-selected="false" aria-controls="i-pred" id="it-pred">Prediction</button>
+      <button role="tab" aria-selected="false" aria-controls="i-arkiv" id="it-arkiv">Arkiv</button>
+      <button role="tab" aria-selected="false" aria-controls="i-ledger" id="it-ledger">Ledger</button>
+    </header>
+    <div class="pane" id="i-fix" role="tabpanel" aria-labelledby="it-fix"></div>
+    <div class="pane" id="i-pred" role="tabpanel" aria-labelledby="it-pred" hidden></div>
+    <div class="pane" id="i-arkiv" role="tabpanel" aria-labelledby="it-arkiv" hidden>
+      <p class="note">Every frame, wind measurement and prediction is an Arkiv entity with indexed attributes. These queries run from this browser against Arkiv Rabdi.</p>
+      <p class="status" id="ark-status" role="status">Not connected</p>
+      <dl class="stats" id="ark-counts"></dl>
+      <h3 class="sub">Query</h3>
+      <div class="presets" id="presets" role="group" aria-label="Example queries"></div>
+      <div class="qform">
+        <label>Entity<select class="select" id="q-schema"><option value="wind">Wind</option><option value="prediction">Prediction</option><option value="packet">Packet</option></select></label>
+        <label class="q-wind">Source<select class="select" id="q-source"><option value="">any</option><option>measured</option><option>gfs</option></select></label>
+        <label class="q-wind">Phase<select class="select" id="q-phase"><option value="">any</option><option>ascent</option><option>descent</option></select></label>
+        <label class="q-wind">Wind ≥ m/s<input class="input mono" id="q-speed" type="number" step="1"></label>
+        <label class="q-wind">Alt from m<input class="input mono" id="q-altmin" type="number" step="500"></label>
+        <label class="q-wind">Alt to m<input class="input mono" id="q-altmax" type="number" step="500"></label>
+        <label class="q-pred" hidden>Kind<select class="select" id="q-kind"><option value="">any</option><option>inflight</option><option>hindcast</option><option>forecast</option></select></label>
+        <label class="q-pred" hidden>Miss ≤ km<input class="input mono" id="q-err" type="number" step="0.1"></label>
+        <label class="q-packet" hidden>Verdict<select class="select" id="q-verdict"><option>verified</option><option>fake</option><option>bad_signature</option><option>replay</option><option>unverified</option><option>conflict</option></select></label>
+        <label class="q-packet" hidden>Run<input class="input mono" id="q-run" type="text" placeholder="any"></label>
+      </div>
+      <pre class="code" id="q-code"></pre>
+      <button class="btn primary" id="q-go" type="button">Run query</button>
+      <p class="status" id="q-status" role="status"></p>
+      <table class="grid compact" id="q-results"></table>
+    </div>
+    <div class="pane" id="i-ledger" role="tabpanel" aria-labelledby="it-ledger" hidden></div>
+  </aside>
+</main>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/deck.gl@9.1.14/dist.min.js"></script>
+<script type="module" src="console.js"></script>
+</body>
+</html>
