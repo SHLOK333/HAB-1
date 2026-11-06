@@ -232,6 +232,16 @@ float signMs = 0;
 
 uint32_t seq = 0, slot = 0, lastSlotMs = 0, upOk = 0, upNone = 0;
 int replayIdx = 0, stride = 5;      // 5 samples of 60 s per frame: 5 min of flight every 12 s
+
+// A flight uploaded over Wi-Fi or USB ("flight new/add/go"), flown instead of the built-in HAB-1
+// replay until "flight builtin" or a reboot. Same 16-byte samples as replay_data.h, in RAM.
+#define CUSTOM_MAX 180
+ReplaySample customFlight[CUSTOM_MAX];
+int customCount = 0, customExpected = 0;
+bool useCustom = false;
+String flightName = "HAB-1 31 Oct 2026";
+const ReplaySample &sampleAt(int i) { return useCustom ? customFlight[i] : REPLAY[i]; }
+int replayCount() { return useCustom ? customCount : REPLAY_COUNT; }
 uint8_t batchFrames[BATCH][DATA_LEN];
 int batchCount = 0;
 uint32_t batchFirstSeq = 0;
@@ -308,7 +318,7 @@ void buildData(uint8_t *f, const ReplaySample &s, int32_t lat7, int32_t lon7, ui
 }
 
 void showBeacon() {
-  const ReplaySample &s = REPLAY[replayIdx];
+  const ReplaySample &s = sampleAt(replayIdx);
   screen({"BEACON seq " + String(seq) + " " + String(batchCount) + "/" + String(BATCH),
           "T" + String(s.flightS >= 0 ? "+" : "") + String(s.flightS / 60.0f, 1) + "min " + String(s.altM) + "m",
           lastUp, lastRf,
@@ -476,7 +486,7 @@ void handleSettled(const uint8_t *b) {
 }
 
 void sendData() {
-  const ReplaySample &s = REPLAY[replayIdx];
+  const ReplaySample &s = sampleAt(replayIdx);
   uint8_t f[DATA_LEN];
   buildData(f, s, s.lat7, s.lon7, s.altM);
   if (batchCount == 0) { batchFirstSeq = seq; esp_fill_random(batchSalt, 4); }
@@ -546,14 +556,37 @@ void sendData() {
   }
   seq++;
   replayIdx += stride;
-  if (replayIdx >= REPLAY_COUNT) { replayIdx = 0; logf("replay: end of flight, starting again\n"); }
+  if (replayIdx >= replayCount()) { replayIdx = 0; logf("replay: end of flight, starting again\n"); }
 }
 
 bool handleCommand(const String &c) {
   if (c == "attack")             { attackPending = true; logf("attack armed: next data slot\n"); }
   else if (c == "badsig")        { badSigPending = true; logf("next signature will be corrupted (test)\n"); }
   else if (c.startsWith("stride ")) { stride = max(1, (int)c.substring(7).toInt()); logf("stride %d\n", stride); }
-  else if (c.startsWith("goto "))   { replayIdx = constrain((int)c.substring(5).toInt(), 0, REPLAY_COUNT - 1); logf("replay index %d\n", replayIdx); }
+  else if (c.startsWith("goto "))   { replayIdx = constrain((int)c.substring(5).toInt(), 0, replayCount() - 1); logf("replay index %d\n", replayIdx); }
+  else if (c.startsWith("flight new ")) {            // flight new <count> <name>
+    int sp = c.indexOf(' ', 11);
+    customExpected = constrain((int)c.substring(11, sp > 0 ? sp : c.length()).toInt(), 0, CUSTOM_MAX);
+    customCount = 0; flightName = sp > 0 ? c.substring(sp + 1) : String("uploaded flight");
+    logf("flight: expecting %d samples for '%s'\n", customExpected, flightName.c_str());
+  }
+  else if (c.startsWith("flight add ")) {            // flight add <index> <hex of 16-byte samples>
+    int sp = c.indexOf(' ', 11); int idx = c.substring(11, sp).toInt();
+    uint8_t buf[96]; size_t n = sp > 0 ? unhex(c.substring(sp + 1), buf, sizeof(buf)) : 0;
+    for (size_t k = 0; k + 16 <= n && idx < customExpected; k += 16, idx++) {
+      ReplaySample &r = customFlight[idx];
+      memcpy(&r.flightS, buf + k, 2); memcpy(&r.lat7, buf + k + 2, 4); memcpy(&r.lon7, buf + k + 6, 4);
+      memcpy(&r.altM, buf + k + 10, 2); memcpy(&r.pressDhPa, buf + k + 12, 2); memcpy(&r.tempCc, buf + k + 14, 2);
+      if (idx + 1 > customCount) customCount = idx + 1;
+    }
+    logf("flight: %d of %d samples\n", customCount, customExpected);
+  }
+  else if (c == "flight go") {
+    if (customCount >= 2 && customCount == customExpected) { useCustom = true; replayIdx = 0; logf("flight: now flying '%s', %d samples\n", flightName.c_str(), customCount); }
+    else logf("flight: NOT switched, %d of %d samples received\n", customCount, customExpected);
+  }
+  else if (c == "flight builtin") { useCustom = false; replayIdx = 0; flightName = "HAB-1 31 Oct 2026"; logf("flight: back to the built-in HAB-1 replay\n"); }
+  else if (c == "flight")        logf("flight: '%s', %s, %d samples, index %d\n", flightName.c_str(), useCustom ? "uploaded" : "built-in", replayCount(), replayIdx);
   else if (c == "pubkey")        logf("pubkey %s\n", hex(pub, 32).c_str());
   else if (c.startsWith("buyer ")) {
     int sp = c.indexOf(' ', 6);
