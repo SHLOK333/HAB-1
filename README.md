@@ -22,7 +22,7 @@ you check the claims yourself, in your browser:
 | **Hedera** (`#/hedera`) | the three ways the balloon's wind is paid for (x402 over HTTP, radio voucher, x402 over LoRa); every sale on the HCS audit topic and the account balances, read live from the mirror node |
 | **Arkiv** (`#/arkiv`) | attribute-filter queries against Arkiv from your browser, the six entity types and their indexed attributes, and the batches written this session |
 | **Protocol** (`#/protocol`) | each LoRa frame as it is received, byte by byte; the browser recomputes the salted hashes and checks the beacon's signature itself |
-| **Flights** (`#/flights`) | HAB-1 next to Tawhiri simulations of it, a new forecast for launching again, and the balloons over India this week (SondeHub) |
+| **Flights** (`#/flights`) | HAB-1 next to Tawhiri simulations of it, a new forecast for launching again, and the balloons over India this week (SondeHub); **simulate your own flight** (site, time, ascent, burst, descent) or a 5-balloon fleet, and play a **simulated LoRa mesh** over it in which balloons relay each other's frames and pay for each relay with x402 |
 
 Live, the console is served by the ground-station laptop (`./demo.sh start`, then
 `http://localhost:8090`). Without the hardware, serve `site/` with any static server and the
@@ -528,6 +528,26 @@ rejected fakes in red, bad signatures in orange, unchecked frames in grey. Refre
   red ("forged frame dropped"). Each batch then gets its Arkiv transaction. Checked live
   (6 Nov 2026): 40 batches re-verified in the browser, all signatures valid; a fake frame sent
   with `./demo.sh attack` was shown as rejected next to the real seq 180.
+
+### Flights page: simulator and mesh (simulated, clearly labelled)
+
+- **Simulate a flight**: launch site (a list of real sites, or a point picked on the map),
+  launch time, ascent rate, burst altitude and descent rate go to CUSF Tawhiri on the latest
+  GFS through SondeHub; the trajectory comes back with a time for every point.
+  **5-balloon fleet** launches from the HAB-1 pad, Pune, Aurangabad, Hyderabad and Kolhapur at
+  the same moment.
+- **Mesh over the simulated flights**: the balloons move through time; a LoRa link exists
+  where the distance is within a computed range: SX1262 at 14 dBm, 2.15 dBi antennas, SF9 /
+  125 kHz sensitivity −129 dBm (datasheet), 10 dB fade margin, free-space loss at 866.1 MHz,
+  so about 200 km, capped by the radio horizon (4/3 Earth). That is conservative: measured
+  LoRa balloon records are 702 km and 832 km (The Things Network), with high-gain ground
+  antennas. Routing is breadth-first to the nearest ground station (Loon-style, each balloon
+  forwards towards the ground). Each balloon sends one frame per simulated minute; a frame
+  relayed by other balloons pays each relay with x402 over LoRa (the exchange measured
+  between our two boards: REQ, 402, PAY, data), at an illustrative 0.001 HBAR per hop,
+  signed on the paying balloon and settled on Hedera when it reaches a ground station.
+  With no route, frames and payments wait on board and go down when a route appears.
+  Nothing here is flown or measured; it is a model built on the measured single-hop exchange.
 
 ### `hedera/`: x402 on Hedera testnet
 
