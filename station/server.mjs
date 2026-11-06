@@ -288,7 +288,7 @@ function packSample(s) {
   return b.toString("hex")
 }
 async function sendToBeacon(lines) {
-  const ip = await beaconOnWifi(); if (!ip) throw new Error("the beacon is not on Wi-Fi (open the iPhone's Personal Hotspot screen)")
+  const ip = await beaconOnWifi(); if (!ip) throw new Error(diagnose().onHotspot ? "the beacon is not on Wi-Fi (open the iPhone's Personal Hotspot screen)" : "this Mac is not on the iPhone hotspot, so it cannot reach the beacon (switch the Mac's Wi-Fi to the hotspot)")
   return new Promise((resolve, reject) => {
     let out = ""; const sock = net.connect({ host: ip, port: 2323 }, async () => {
       for (const l of lines) { sock.write(l + "\n"); await new Promise(r => setTimeout(r, 150)) }
@@ -356,7 +356,10 @@ function runAction(name, body, timed) {
     // check first, so the operator is not left waiting for a command that cannot reach the beacon
     beaconOnWifi().then(ip => {
       if (ip) return body?.when === "end" ? armAttack() : attackNow()
-      send("cmd", { id: "attack-timing", name: "attack", line: "The beacon is not on Wi-Fi, so this button cannot reach it. Press the PRG button on the beacon instead (the Protocol page shows the best moment), or open the iPhone's Personal Hotspot screen so the beacon rejoins." })
+      const line = diagnose().onHotspot
+        ? "The beacon is not on Wi-Fi, so this button cannot reach it. Press the PRG button on the beacon instead (the Protocol page shows the best moment), or open the iPhone's Personal Hotspot screen so the beacon rejoins."
+        : "This Mac is on another Wi-Fi network, not the iPhone hotspot, so it cannot reach the beacon. Switch the Mac's Wi-Fi to the iPhone hotspot and press again, or press the PRG button on the beacon."
+      send("cmd", { id: "attack-timing", name: "attack", line })
       send("cmd", { id: "attack-timing", name: "attack", done: true, code: 1 })
     })
     return { ok: true, id: "attack-check" }
