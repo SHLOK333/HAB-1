@@ -534,3 +534,34 @@ body[data-page="hedera"] #pg-hedera, body[data-page="arkiv"] #pg-arkiv { display
 .nav { flex: none; }
 @media (max-width: 1500px) { .links::before { display: none; } .links { gap: 10px; } }
 @media (max-width: 1300px) { .links li { font-size: 0; gap: 0; } .links li i { width: 10px; height: 10px; } }
+
+/* ---------------------------------------------------------------- floating dock (vanilla port of Aceternity UI's FloatingDock) */
+.fdock { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 40; }
+.fdock.in-map { position: absolute; bottom: 14px; }
+.fdock-desktop { display: none; height: 64px; align-items: flex-end; gap: 16px; border-radius: 16px; background: #f9fafb; padding: 0 16px 12px; }
+.fdock-desktop a { text-decoration: none; }
+.fdock-item { position: relative; display: flex; aspect-ratio: 1 / 1; width: 40px; height: 40px; align-items: center; justify-content: center; border-radius: 9999px; background: #e5e7eb; color: #737373; }
+.fdock-icon { display: flex; width: 20px; height: 20px; align-items: center; justify-content: center; }
+.fdock-icon svg { width: 100%; height: 100%; }
+.fdock-desktop a.cur .fdock-item { box-shadow: 0 0 0 1.5px var(--accent); }
+.fdock-tip { position: absolute; top: -32px; left: 50%; transform: translateX(-50%); width: fit-content; border-radius: 6px; border: 1px solid #e5e7eb; background: #f3f4f6; padding: 2px 8px; font: 12px/16px "Red Hat Text", system-ui, sans-serif; white-space: pre; color: #404040; pointer-events: none; }
+.fdock-tip.in { animation: fdock-tip-in 200ms ease-out both; } .fdock-tip.out { animation: fdock-tip-out 150ms ease-in both; }
+@keyframes fdock-tip-in { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes fdock-tip-out { from { opacity: 1; transform: translate(-50%, 0); } to { opacity: 0; transform: translate(-50%, 2px); } }
+.fdock-mobile { position: relative; display: block; }
+.fdock-mlist { position: absolute; left: 0; right: 0; bottom: 100%; margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px; }
+.fdock-mlist[hidden] { display: none; }
+.fdock-mlist a { display: flex; width: 40px; height: 40px; align-items: center; justify-content: center; border-radius: 9999px; background: #f9fafb; color: #737373; animation: fdock-m-in 200ms ease-out both; animation-delay: calc((6 - var(--i)) * 50ms); }
+.fdock-micon { width: 16px; height: 16px; } .fdock-micon svg { width: 100%; height: 100%; }
+@keyframes fdock-m-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.fdock-toggle { display: flex; width: 40px; height: 40px; align-items: center; justify-content: center; border: 0; border-radius: 9999px; background: #f9fafb; color: #737373; cursor: pointer; }
+.fdock-toggle svg { width: 20px; height: 20px; }
+@media (min-width: 768px) { .fdock-desktop { display: flex; } .fdock-mobile { display: none; } }
+@media (max-width: 767px) { .fdock { left: auto; right: 16px; transform: none; } }
+[data-theme="dark"] .fdock-desktop { background: #171717; }
+[data-theme="dark"] .fdock-item { background: #262626; color: #d4d4d4; }
+[data-theme="dark"] .fdock-tip { border-color: #171717; background: #262626; color: #fff; }
+[data-theme="dark"] .fdock-mlist a { background: #171717; color: #d4d4d4; }
+[data-theme="dark"] .fdock-toggle { background: #262626; color: #a3a3a3; }
+@media (prefers-reduced-motion: reduce) { .fdock-tip.in, .fdock-tip.out, .fdock-mlist a { animation: none; } }
+.pg-in { padding-bottom: 110px; }
