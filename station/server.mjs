@@ -75,7 +75,11 @@ function watchVerifier() {
 }
 function onRadio(line) {
   let e; try { e = JSON.parse(line) } catch { return }
-  if (e.ev === "data") { state.lastFrameAt = Date.now(); state.lastFrame = e }
+  if (e.ev === "data") {
+    state.lastFrameAt = Date.now(); state.lastFrame = e
+    // an armed attack goes out with the batch's last data frame, so the SIG frame catches it 12 s later
+    if (attackArmed && e.seq % 6 === 4) fireAttack(e.seq)
+  }
   if (e.ev === "verdict") {
     state.counts[e.verdict] = (state.counts[e.verdict] ?? 0) + 1
     if (e.beacon_key) state.beaconKey = e.beacon_key
@@ -247,7 +251,27 @@ const ACTIONS = {
   analyze: () => ["node", ["--env-file=../.env", "analytics.mjs"], path.join(ROOT, "mission")],
 }
 let running = null
-function runAction(name, body) {
+// Forged frame, timed for a live audience. The beacon sends the fake right after its next
+// data frame, and the fake is only judged when that batch's SIG frame arrives. Armed while
+// the batch's 5th frame (seq % 6 == 4) is the latest, the fake rides with the 6th and the
+// SIG follows one slot (12 s) later: caught about 24 s after the click, not up to 84 s.
+let attackArmed = null
+function fireAttack(seq) {
+  attackArmed = null
+  send("cmd", { id: "attack-timing", name: "attack", line: `arming the beacon now: the fake goes out with seq ${seq + 1}, the last frame of batch ${seq - 4}–${seq + 1}; its SIG frame follows about 12 s later` })
+  runAction("attack", {}, true)
+}
+function armAttack() {
+  const e = state.lastFrame, age = (Date.now() - state.lastFrameAt) / 1000
+  if (e && e.seq % 6 === 4 && age < 9) { fireAttack(e.seq); return { ok: true, id: "attack-now" } }
+  attackArmed = { at: Date.now() }
+  const k = e ? e.seq % 6 : 0, wait = e ? Math.max(0, Math.round((k === 5 ? 6 : k === 4 ? 7 : 4 - k) * 12 - age)) : null
+  send("cmd", { id: "attack-timing", name: "attack", line: `forged frame armed: waiting for the 5th frame of the batch${wait != null ? ` (about ${wait} s)` : ""}, so the signature frame catches it right after` })
+  return { ok: true, id: "attack-armed" }
+}
+
+function runAction(name, body, timed) {
+  if (name === "attack" && !timed) return armAttack()
   if (running && name !== "stop") return { ok: false, error: `busy: ${running.name} is still running` }
   const [cmd, args, cwd] = ACTIONS[name](body), id = `${name}-${Date.now()}`
   const p = spawn(cmd, args, { cwd: cwd ?? ROOT, env: process.env })
