@@ -1,0 +1,10 @@
+{
+  "name": "hab-mission",
+  "private": true,
+  "type": "module",
+  "description": "HAB-1 prediction, Arkiv mission data and 0G analytics",
+  "dependencies": {
+    "@arkiv-network/sdk": "1.0.0",
+    "viem": "2.57.14"
+  }
+}
