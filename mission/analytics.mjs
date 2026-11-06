@@ -2,7 +2,10 @@
 // AI analytics over Arkiv: query mission data with attribute filters, hand a compact
 // digest to a 0G model, and store the answer back on Arkiv as a boscon.hab.insight,
 // with the 0G request id and whether 0G listed the model as TEE-attested.
-// Nothing is written when 0G does not answer: no insight is ever made up.
+// Before it is written, a second 0G model (Vela 2.0 9B, a TEE-attested decision model)
+// marks any claim in the answer that the Arkiv data does not support ("span" question);
+// the verdict is stored as indexed attributes, so "guardVerdict=supported" is a filter.
+// Nothing is written when 0G does not answer: no insight is ever made up or left unchecked.
 //
 //   node --env-file=../.env analytics.mjs [jet-stream] [landing-error] [verification]
 import fs from "node:fs"
@@ -24,6 +27,7 @@ const wallet = createWalletClient({ chain, transport: http(), account })
 const ZG = process.env.ZG_PC_BASE_URL, KEY = process.env.ZG_PC_API_KEY
 // TEE-attested models first; the last ones are plain fallbacks, recorded as teeAttested=false
 const PREFERRED = (process.env.ZG_ANALYTICS_MODELS ?? "0gm-1.0-35b-a3b,deepseek-v4-pro,glm-5.1,qwen3.6-plus,deepseek-v4-flash").split(",")
+const GUARD = process.env.ZG_GUARD_MODEL ?? "vela-2.0-9b"
 const base = and(eq("flight", FLIGHT), eq("dataset", DATASET))
 
 async function all(q) { const out = []; for (let o = 0; ; o += 100) { const p = await q().limit(100).offset(o).fetch(); out.push(...p.entities); if (p.entities.length < 100) return out } }
@@ -74,6 +78,23 @@ async function ask0G(model, topic, d) {
   return { id: j.id, e2ee: r.headers.get("x-0g-e2ee"), parsed, usage: j.usage }
 }
 
+// Vela marks claims in the insight that the source data does not support. Spans are
+// character offsets into the state; only those inside the INSIGHT part count.
+async function guard(d, parsed) {
+  const claims = [parsed.headline, ...(parsed.findings ?? []), ...(parsed.anomalies ?? [])].filter(Boolean).join("\n")
+  const head = `SOURCE DATA (read from Arkiv: ${d.q}):\n${d.digest.join("\n")}\n\nINSIGHT:\n`, state = head + claims
+  const r = await fetch(`${ZG}/decisions`, { method: "POST", headers: { Authorization: `Bearer ${KEY}`, "content-type": "application/json" },
+    body: JSON.stringify({ model: GUARD, state, verify_tee: true, questions: { unsupported: { type: "span",
+      instructions: "Mark claims in the INSIGHT that the SOURCE DATA does not support.",
+      criteria: { unsupported_claim: "a claim in the insight that the source data does not support" } } } }) })
+  const j = await r.json()
+  const requestId = j.x_0g_trace?.request_id ?? r.headers.get("x-request-id")
+  if (!r.ok) throw new Error(`0G guard ${r.status}: ${j.error?.message ?? JSON.stringify(j).slice(0, 120)} (request ${requestId})`)
+  const flagged = (j.spans?.unsupported ?? []).filter(x => x.start >= head.length).map(x => ({ text: x.text, p: Math.round(x.probability * 1000) / 1000 }))
+  return { model: GUARD, requestId, teeVerified: j.x_0g_trace?.tee_verified ?? null, verdict: flagged.length ? "flagged" : "supported", flagged,
+           threshold: j.thresholds?.unsupported ?? null, costUsdMicro: j.x_0g_trace?.billing?.total_cost_usd_micro ?? null }
+}
+
 // ---------------------------------------------------------------- run
 const topics = process.argv.slice(2).filter(t => TOPICS[t]); if (!topics.length) topics.push(...Object.keys(TOPICS))
 const pending = path.join(here, "data", "analytics-pending.json"), saved = path.join(here, "data", "insights.json")
@@ -86,11 +107,15 @@ for (const topic of topics) {
   try {
     const a = await ask0G(model.id, topic, d)
     const headline = String(a.parsed.headline ?? "").slice(0, 100)
-    const rec = { topic, model: model.id, teeAttested: model.tee, requestId: a.id, e2ee: a.e2ee, headline, ...a.parsed, arkivQuery: d.q, inputs: d.digest, at: new Date().toISOString() }
+    const g = await guard(d, a.parsed)
+    const rec = { topic, model: model.id, teeAttested: model.tee, requestId: a.id, e2ee: a.e2ee, headline, ...a.parsed, guard: g, arkivQuery: d.q, inputs: d.digest, at: new Date().toISOString() }
     const { entityKey, txHash } = await wallet.createEntity(Insight, { flight: FLIGHT, dataset: DATASET, topic, model: model.id, teeAttested: String(model.tee),
       requestId: String(a.id).slice(0, 128), createdAt: u64(Math.floor(Date.now() / 1000)), headline: Buffer.from(headline).subarray(0, 128).toString(),
-      query: bytes(Buffer.from(d.q)), body: bytes(Buffer.from(JSON.stringify(rec))) }, { expiration: ExpirationTime.fromDays(DAYS) })
+      query: bytes(Buffer.from(d.q)), body: bytes(Buffer.from(JSON.stringify(rec))),
+      guardModel: g.model, guardVerdict: g.verdict, guardRequestId: String(g.requestId).slice(0, 128) }, { expiration: ExpirationTime.fromDays(DAYS) })
     results.push({ ...rec, entityKey, txHash }); fs.writeFileSync(saved, JSON.stringify(results, null, 1))
-    console.log(`  0G ${model.id} (TEE-attested: ${model.tee}) request ${a.id}\n  ${headline}\n  Arkiv insight ${entityKey}`)
+    console.log(`  0G ${model.id} (TEE-attested: ${model.tee}) request ${a.id}\n  ${headline}`)
+    console.log(`  guard ${g.model} (TEE verified: ${g.teeVerified}) request ${g.requestId}: ${g.verdict}${g.flagged.length ? " " + JSON.stringify(g.flagged) : ""}`)
+    console.log(`  Arkiv insight ${entityKey}  tx ${txHash}`)
   } catch (e) { console.log(`  ${e.message}\n  nothing written to Arkiv`) }
 }

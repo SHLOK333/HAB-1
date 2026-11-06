@@ -112,5 +112,146 @@
   "at": "2026-11-06T03:44:04.676Z",
   "entityKey": "0x1b1f6ac8d8fa210da532273ffd0582dc807c2e2165b74e6864101addbd33ddee",
   "txHash": "0xab4712201c5db79ed5023678b937f93a26ef2ec8a5fbd867dbe7b6391f5c0212"
+ },
+ {
+  "topic": "jet-stream",
+  "model": "0gm-1.0-35b-a3b",
+  "teeAttested": true,
+  "requestId": "chatcmpl-562e73d3-9d02-4261-a83d-2fe1b2363462",
+  "e2ee": "sealed",
+  "headline": "Jet stream at 12-14km (25.1 m/s); GFS underestimates peak winds.",
+  "findings": [
+   "Jet stream core identified in 12-14km band with measured max wind of 25.1 m/s.",
+   "Measured winds peak at 12-14km (mean 21.7 m/s) and 10-12km (mean 21.0 m/s).",
+   "Winds decrease significantly above 14km, dropping to 11.5 m/s mean at 14-16km."
+  ],
+  "anomalies": [
+   "GFS model significantly underestimates peak winds in the 10-12km band (Model: 17.5 m/s vs Measured: 23.0 m/s).",
+   "GFS model underestimates peak winds in the 12-14km band (Model: 23.8 m/s vs Measured: 25.1 m/s).",
+   "GFS model overestimates winds in the 16-18km band (Model: 6.5 m/s vs Measured: 6.3 m/s mean, though max is close)."
+  ],
+  "guard": {
+   "model": "vela-2.0-9b",
+   "requestId": "1f40008a-4d81-4994-83f8-e2dcee955d65",
+   "teeVerified": true,
+   "verdict": "supported",
+   "flagged": [],
+   "threshold": 0.5,
+   "costUsdMicro": "72"
+  },
+  "arkivQuery": "Wind where flight=hab1-2026-10-31 and dataset=mission-v1, all sources, ordered by altM",
+  "inputs": [
+   "0-2km gfs: n=6 mean=2.1 max=2.3 m/s",
+   "0-2km measured: n=13 mean=3.7 max=6.3 m/s",
+   "2-4km gfs: n=2 mean=1.9 max=1.9 m/s",
+   "2-4km measured: n=16 mean=2.4 max=5.1 m/s",
+   "4-6km measured: n=14 mean=5.4 max=7.4 m/s",
+   "4-6km gfs: n=2 mean=6.5 max=7.8 m/s",
+   "6-8km measured: n=13 mean=10.4 max=13.3 m/s",
+   "6-8km gfs: n=1 mean=10.9 max=10.9 m/s",
+   "8-10km measured: n=14 mean=17.6 max=20.8 m/s",
+   "8-10km gfs: n=1 mean=19.3 max=19.3 m/s",
+   "10-12km measured: n=11 mean=21.0 max=23.0 m/s",
+   "10-12km gfs: n=1 mean=17.5 max=17.5 m/s",
+   "12-14km measured: n=12 mean=21.7 max=25.1 m/s",
+   "12-14km gfs: n=1 mean=23.8 max=23.8 m/s",
+   "14-16km measured: n=12 mean=11.5 max=14.8 m/s",
+   "14-16km gfs: n=1 mean=14.0 max=14.0 m/s",
+   "16-18km measured: n=11 mean=6.3 max=8.1 m/s",
+   "16-18km gfs: n=1 mean=6.5 max=6.5 m/s",
+   "18-20km measured: n=9 mean=4.3 max=6.6 m/s",
+   "18-20km gfs: n=1 mean=3.3 max=3.3 m/s",
+   "20-22km gfs: n=1 mean=7.3 max=7.3 m/s",
+   "22-24km gfs: n=1 mean=4.8 max=4.8 m/s"
+  ],
+  "at": "2026-11-06T06:13:40.050Z",
+  "entityKey": "0x4272eb9a93cb8f13f40691b5dcca7df5f95b7dbad15e8ecf5bea012b830d6299",
+  "txHash": "0xfc2896154fad9b359055b76bd813e07d247f7b8d5099aa5720de94c6569040de"
+ },
+ {
+  "topic": "landing-error",
+  "model": "0gm-1.0-35b-a3b",
+  "teeAttested": true,
+  "requestId": "chatcmpl-f25254ad-0663-44fa-a107-afe6952d1fde",
+  "e2ee": "sealed",
+  "headline": "Landing error drops to 0.38km at T+100min, enabling recovery drive.",
+  "findings": [
+   "Initial errors were high: 3.84km (hindcast/inflight T+0) and -1km (forecast).",
+   "Error decreased significantly as flight progressed: 3.11km (T+10), 1.32km (T+20), 4.26km (T+30).",
+   "Error stabilized below 2km from T+60min onwards (1.14km to 1.84km).",
+   "Minimum error of 0.38km occurred at T+100min (alt=6554m).",
+   "Error increased slightly during descent: 1.46km (T+110), 1.06km (T+120)."
+  ],
+  "anomalies": [
+   "Forecast T+0min shows negative error (-1km), indicating predicted altitude was higher than actual.",
+   "Error spike at T+30min (4.26km) despite increasing measured bands.",
+   "Error at T+120min (1.06km) is higher than T+100min (0.38km) despite being closer to landing."
+  ],
+  "guard": {
+   "model": "vela-2.0-9b",
+   "requestId": "cdef7c72-1841-4219-beab-59e1f8f2ca40",
+   "teeVerified": true,
+   "verdict": "supported",
+   "flagged": [],
+   "threshold": 0.5,
+   "costUsdMicro": "62"
+  },
+  "arkivQuery": "Prediction where flight=hab1-2026-10-31 and dataset=mission-v1, ordered by fromFlightS",
+  "inputs": [
+   "hindcast T+0min alt=618m measuredBands=0 error=3.84km",
+   "inflight T+0min alt=476m measuredBands=0 error=3.84km",
+   "forecast T+0min alt=0m measuredBands=0 error=-1km",
+   "inflight T+10min alt=3222m measuredBands=6 error=3.11km",
+   "inflight T+20min alt=6044m measuredBands=11 error=1.32km",
+   "inflight T+30min alt=8843m measuredBands=17 error=4.26km",
+   "inflight T+40min alt=11448m measuredBands=22 error=3.59km",
+   "inflight T+50min alt=14147m measuredBands=28 error=4.03km",
+   "inflight T+60min alt=16951m measuredBands=33 error=1.14km",
+   "inflight T+70min alt=19557m measuredBands=38 error=1.84km",
+   "inflight T+80min alt=14383m measuredBands=38 error=1.8km",
+   "inflight T+90min alt=10174m measuredBands=38 error=1.42km",
+   "inflight T+100min alt=6554m measuredBands=38 error=0.38km",
+   "inflight T+110min alt=3691m measuredBands=38 error=1.46km",
+   "inflight T+120min alt=1622m measuredBands=38 error=1.06km"
+  ],
+  "at": "2026-11-06T06:13:58.322Z",
+  "entityKey": "0x2b0408afde4ea7e67ca904de93c4450a2cbd13cef5e93deab0cd1a7b14d85665",
+  "txHash": "0x7b518f9ade6331549a844611725d567ed554bfcc34cc0532540bbac3cce98039"
+ },
+ {
+  "topic": "verification",
+  "model": "0gm-1.0-35b-a3b",
+  "teeAttested": true,
+  "requestId": "chatcmpl-2289c387-932e-4ed1-9ebd-b8135d26e25f",
+  "e2ee": "sealed",
+  "headline": "Link stable, no attacks detected",
+  "findings": [
+   "100% of telemetry frames (549) verified successfully.",
+   "Zero frames rejected for bad signatures, replay, or conflicts."
+  ],
+  "anomalies": [
+   "None detected."
+  ],
+  "guard": {
+   "model": "vela-2.0-9b",
+   "requestId": "dcf559d6-883d-42fa-bf10-fcfd36c6d8e2",
+   "teeVerified": true,
+   "verdict": "supported",
+   "flagged": [],
+   "threshold": 0.5,
+   "costUsdMicro": "14"
+  },
+  "arkivQuery": "count(Packet) where flight=hab1-2026-10-31 and verdict=<each>, owned by this ground station",
+  "inputs": [
+   "verified: 549",
+   "fake: 0",
+   "bad_signature: 0",
+   "unverified: 0",
+   "replay: 0",
+   "conflict: 0"
+  ],
+  "at": "2026-11-06T06:14:14.859Z",
+  "entityKey": "0xaaf70a7bd48eb41e767328fd5eb5be90f933e6156ee3788db5f4165721b95298",
+  "txHash": "0x491eb1fa3da202560d446e56e9be6b929aef5b5dafa83d047dbcd496ce6264e8"
  }
 ]
