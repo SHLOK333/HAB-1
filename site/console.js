@@ -479,8 +479,15 @@ function renderOps() {
   }
   $("op-alt").disabled = !live
   $("ops-note").textContent = S.busy ? `running ${S.busy}…` : ""
-  $("ops-hint").textContent = live ? (running ? "Actions run the project's own commands on this laptop; output appears in the event log." : "Start a session to bring the radio link up.")
-    : "Operations run on the ground station laptop: node station/server.mjs, then open http://localhost:8090."
+  // Say why a light is red or yellow, and what fixes it.
+  const h = S.health, probs = !live || !h ? [] : [
+    h.diag?.verifierError && `Radio: ${h.diag.verifierError}, then Start session.`,
+    h.diag && !h.diag.onHotspot && "This laptop is not on the iPhone hotspot, so it cannot reach the Pi or the beacon: join the \"iPhone\" network (keep its Personal Hotspot screen open).",
+    !h.ground.usb && "No ground Heltec on USB: plug it in (some cables are charge only).",
+    h.diag?.onHotspot && h.pi.lastAgeS != null && h.pi.lastAgeS > 120 && "Payload: the Pi has not answered for over 2 minutes. Check its power; it rejoins the hotspot within about a minute of booting."].filter(Boolean)
+  $("ops-hint").innerHTML = probs.length ? probs.map(p => `<span class="warn">${esc(p)}</span>`).join("<br>")
+    : esc(live ? (running ? "Actions run the project's own commands on this laptop; output appears in the event log." : "Start a session to bring the radio link up.")
+      : "Operations run on the ground station laptop: node station/server.mjs, then open http://localhost:8090.")
 }
 for (const [id, name] of Object.entries(OPS)) $(id).onclick = async () => {
   const r = await fetch(`/api/cmd/${name}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ alt: Number($("op-alt").value) }) }).then(r => r.json()).catch(e => ({ ok: false, error: e.message }))
