@@ -33,7 +33,8 @@ export function initPages(c) {
       <tr><td>thermal</td><td>${m("vela-2.0-9b")}</td><td class="wrap">Should the camera keep running? (SoC temperature, limit)</td><td class="ok">P(continue) ≥ 0.8</td><td>pause the camera</td></tr>
       <tr><td>vision</td><td>${m("qwen3-vl-plus", false)} then ${m("laya")}</td><td class="wrap">Is this frame worth the radio? Then Laya reads the vision model's own words: does it say the image shows nothing?</td><td class="ok">drop and P(empty) ≥ 0.7</td><td>keep the frame on disk</td></tr>
       <tr><td>analysis</td><td>${m("0gm-1.0-35b-a3b")} then ${m("vela-2.0-9b")}</td><td class="wrap">An insight from Arkiv data, then Vela marks any claim the data does not support (span question)</td><td class="ok">stored with guardVerdict</td><td>nothing stored if 0G does not answer</td></tr>
-      <tr><td>any</td><td colspan="2" class="wrap">0G unreachable, no key, timeout, or an answer that is not one of the allowed actions</td><td class="warn">safe stop</td><td>change nothing, delete nothing, log it, alert the beacon</td></tr></tbody>`
+      <tr><td>decision models down</td><td>${m("0gm-1.0-35b-a3b")} then ${m("qwen3.6-plus", false)}</td><td class="wrap">the same question to a 0G chat model; the signed log marks it <b>fallback</b>, with no probability, and whether the model is TEE-attested</td><td class="warn">the chat model's answer</td><td>—</td></tr>
+      <tr><td>any</td><td colspan="2" class="wrap">every 0G model unreachable, no key, timeout, or an answer that is not one of the allowed actions</td><td class="warn">safe stop</td><td>change nothing, delete nothing, log it, alert the beacon</td></tr></tbody>`
   }
   async function zgLoadLog() {
     if (ZG.records || !EP?.file) return
@@ -59,7 +60,7 @@ export function initPages(c) {
     $("zg-dec-note").textContent = recs.length ? `the signed log in registry entry #${EP.index}, newest first${S.mode === "live" ? " · live lines in Mission → Event log" : ""}` : "loading the signed log…"
     $("zg-decisions").innerHTML = `<thead><tr><th>Time (UTC)</th><th>Checkpoint</th><th>Model</th><th>0G answer</th><th>Action on the payload</th><th>0G request ID</th><th>Signature</th></tr></thead><tbody>${rows.map(r => {
       const i = recs.indexOf(r), v = ZG.verified?.ok != null ? ZG.verified.each[i] : null
-      return `<tr><td>${new Date(r.ts * 1000).toISOString().slice(11, 19)}</td><td>${esc(r.checkpoint)}</td><td>${esc(r.model ?? "—")}${r.decision?.check ? " + laya" : ""}</td><td>${answerOf(r)}</td><td class="wrap">${esc(r.action_taken)}</td><td title="${esc(r.request_id)}">${esc(short(r.request_id ?? "") || "—")}</td><td class="${v === true ? "ok" : v === false ? "bad" : ""}">${v === true ? "✓ valid" : v === false ? "✕ invalid" : "not checked"}</td></tr>` }).join("")}</tbody>`
+      return `<tr><td>${new Date(r.ts * 1000).toISOString().slice(11, 19)}</td><td>${esc(r.checkpoint)}</td><td>${esc(r.model ?? "—")}${r.decision?.check ? " + laya" : ""}${r.decision?.fallback ? ' <span class="chip warn">fallback</span>' : ""}</td><td>${answerOf(r)}</td><td class="wrap">${esc(r.action_taken)}</td><td title="${esc(r.request_id)}">${esc(short(r.request_id ?? "") || "—")}</td><td class="${v === true ? "ok" : v === false ? "bad" : ""}">${v === true ? "✓ valid" : v === false ? "✕ invalid" : "not checked"}</td></tr>` }).join("")}</tbody>`
   }
   async function ethCall(to, data) {
     const r = await getJSON0G({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to, data }, "latest"] })
