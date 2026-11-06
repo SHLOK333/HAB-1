@@ -1,0 +1,16 @@
+.env
+node_modules/
+.venv/
+__pycache__/
+wifi_secrets.h
+ground/log/
+ground/state/
+zg/episodes/
+zg/uploads.jsonl
+.demo/
+hedera/state/
+.claude/
+.impeccable/
+_to_delete/
+arkiv/state/
+.DS_Store
