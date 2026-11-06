@@ -1,0 +1,29 @@
+{
+ "run": "lora-1106",
+ "chain": "0G mainnet (16661)",
+ "servingContract": "0x47340d900bdFec2BD393c626E12ea0656F938d84",
+ "checkedAt": "2026-11-06T16:45:14.003Z",
+ "proven": 0,
+ "items": [
+  {
+   "ts": 1793983146.68,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "876b10de-c38c-9006-8fa1-944c8e86dc82",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793983152.993,
+   "checkpoint": "thermal",
+   "model": "vela-2.0-9b",
+   "action": "continue",
+   "chatID": "ed6dc9284fb75a1f",
+   "fallback": false,
+   "status": "no provider listed for this model now"
+  }
+ ]
+}

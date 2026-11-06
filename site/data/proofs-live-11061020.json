@@ -2,8 +2,8 @@
  "run": "live-11061020",
  "chain": "0G mainnet (16661)",
  "servingContract": "0x47340d900bdFec2BD393c626E12ea0656F938d84",
- "checkedAt": "2026-11-06T10:49:56.556Z",
- "proven": 5,
+ "checkedAt": "2026-11-06T15:18:39.633Z",
+ "proven": 0,
  "items": [
   {
    "ts": 1793960445.809,
@@ -181,12 +181,7 @@
    "image": "ghcr.io/0gfoundation/0g-serving-broker@sha256:6ecabf95a7aa49056b82460c985248159d5eafb127dc4914fc015bd50fc040f6",
    "verifier": "dstack",
    "verifierUrl": "https://github.com/Dstack-TEE/dstack/releases/tag/verifier-v0.5.4",
-   "signedText": "zg-sig-v1/e2ee-ct:db4add2f664298c26c926fe8cbb6bcad879e262de8e8e718f416db25ea6e290a:23159022a12ae1031a246633df3a58e15862275e9deaae22aca25d9b66c66cf6",
-   "signature": "0xd901f04875f5c3be625c872dfc0cdd6b9e3af9a6293f9ab1d2b526636516363531e0f09528fc52da8e5be8296c0f95b9a26ef4ca99da4e37589938d54bc8c8ac1b",
-   "recovered": "0x0766BC72beB6dAe764eE51C781c0A68117E69179",
-   "ok": true,
-   "sdk": true,
-   "status": "signed in the enclave"
+   "status": "provider returned no signature ({\"error\":\"prepare HTTP request: Chat id not found or expired, chat_id_not_found\")"
   },
   {
    "ts": 1793961191.344,
@@ -247,12 +242,7 @@
    "image": "ghcr.io/0gfoundation/0g-serving-broker@sha256:6ecabf95a7aa49056b82460c985248159d5eafb127dc4914fc015bd50fc040f6",
    "verifier": "dstack",
    "verifierUrl": "https://github.com/Dstack-TEE/dstack/releases/tag/verifier-v0.5.4",
-   "signedText": "zg-sig-v1/e2ee-ct:38f7cadaf0b59871d55d39156fc19ef5e21d54df3887cdf1b798b1377705e9bf:ecfbdc3f88f9f69c55ee26f65bd488f9b2c592409bcfaf95cbd51b2c5ed655ab",
-   "signature": "0x3bde2d988f3c3de7f53bf65a0d1394e33148ae3aa7b9fbc1d1ec6a9f6acdc13738c2c1aff3454fc1971d557736cf807a3d7c1eb40387afc248720fc7490b4ddb1c",
-   "recovered": "0x0766BC72beB6dAe764eE51C781c0A68117E69179",
-   "ok": true,
-   "sdk": true,
-   "status": "signed in the enclave"
+   "status": "provider returned no signature ({\"error\":\"prepare HTTP request: Chat id not found or expired, chat_id_not_found\")"
   },
   {
    "ts": 1793961486.079,
@@ -269,12 +259,7 @@
    "image": "ghcr.io/0gfoundation/0g-serving-broker@sha256:6ecabf95a7aa49056b82460c985248159d5eafb127dc4914fc015bd50fc040f6",
    "verifier": "dstack",
    "verifierUrl": "https://github.com/Dstack-TEE/dstack/releases/tag/verifier-v0.5.4",
-   "signedText": "zg-sig-v1/e2ee-ct:026631da86fb145c870886043fbc12acc6280df51f32f4de7611be072c38baa6:97193c2607b9903a74ddb5521d6dfc3b9544028616fb20f3f2ea6e9dc20aebcf",
-   "signature": "0xb9ff806adee958d553f0b8e7f57cd2665c2cf390686ab33114a32c264f31d7101387c82cb1f9c54e12822bb7034f8448a07dbf6def8e2a0c1284eafe3bc59ebe1b",
-   "recovered": "0x0766BC72beB6dAe764eE51C781c0A68117E69179",
-   "ok": true,
-   "sdk": true,
-   "status": "signed in the enclave"
+   "status": "provider returned no signature ({\"error\":\"prepare HTTP request: Chat id not found or expired, chat_id_not_found\")"
   },
   {
    "ts": 1793961551.679,
@@ -324,12 +309,7 @@
    "image": "ghcr.io/0gfoundation/0g-serving-broker@sha256:6ecabf95a7aa49056b82460c985248159d5eafb127dc4914fc015bd50fc040f6",
    "verifier": "dstack",
    "verifierUrl": "https://github.com/Dstack-TEE/dstack/releases/tag/verifier-v0.5.4",
-   "signedText": "zg-sig-v1/e2ee-ct:c840e907b5fa95aa830b756ff2471113118ab1f9c118024908e1fc7aa0098555:fa73a056d7388fed8878b6203417bee627f080724f29cec2b526c98b0be56a60",
-   "signature": "0x30ac59ac9354ea30e4ac31573216b19a7ef5abb82096f9030ae7cb7543a8689033caf9325d6b9674937bc4e469691d60c9f4ac0505282d70219c987a5018c0b71c",
-   "recovered": "0x0766BC72beB6dAe764eE51C781c0A68117E69179",
-   "ok": true,
-   "sdk": true,
-   "status": "signed in the enclave"
+   "status": "provider returned no signature ({\"error\":\"prepare HTTP request: Chat id not found or expired, chat_id_not_found\")"
   },
   {
    "ts": 1793961819.419,
@@ -357,12 +337,7 @@
    "image": "ghcr.io/0gfoundation/0g-serving-broker@sha256:6ecabf95a7aa49056b82460c985248159d5eafb127dc4914fc015bd50fc040f6",
    "verifier": "dstack",
    "verifierUrl": "https://github.com/Dstack-TEE/dstack/releases/tag/verifier-v0.5.4",
-   "signedText": "zg-sig-v1/e2ee-ct:8ed4b0fd3eefe025aa70a17523513ca4014cca8fdc4a209cfc82d2c4bd2a3c43:72dd34ea222f2d1e977c751e239f83ad2104c111e1d96f6c2df99bcd1b17c792",
-   "signature": "0xad1051cf4014fd2de17f6e0c2dbaecad8e8d2281ec90eca2a101fd66a0ff4aa50cfce65f5a5968d8369b2cc4e910c22da4e79f1bc8091ecc8a27e2c7fdd915e61b",
-   "recovered": "0x0766BC72beB6dAe764eE51C781c0A68117E69179",
-   "ok": true,
-   "sdk": true,
-   "status": "signed in the enclave"
+   "status": "provider returned no signature ({\"error\":\"prepare HTTP request: Chat id not found or expired, chat_id_not_found\")"
   },
   {
    "ts": 1793961910.611,
@@ -381,6 +356,105 @@
    "model": "qwen3-vl-plus",
    "action": "drop",
    "chatID": "369323f6-dd53-9c93-baea-965d10efe2c6",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793962191.549,
+   "checkpoint": "burst",
+   "model": "glm-5.3",
+   "action": "start_recovery",
+   "chatID": "a792cd08-1e69-4425-a043-ce5c9b0f070c",
+   "fallback": true,
+   "provider": "0xD179F4526064846dE9a9E9D93683AF75CB72E503",
+   "url": "https://compute-network-19.integratenetwork.work",
+   "verifiability": "TeeML",
+   "teeSigner": "0x0766BC72beB6dAe764eE51C781c0A68117E69179",
+   "acknowledged": true,
+   "image": "ghcr.io/0gfoundation/0g-serving-broker@sha256:6ecabf95a7aa49056b82460c985248159d5eafb127dc4914fc015bd50fc040f6",
+   "verifier": "dstack",
+   "verifierUrl": "https://github.com/Dstack-TEE/dstack/releases/tag/verifier-v0.5.4",
+   "status": "provider returned no signature ({\"error\":\"prepare HTTP request: Chat id not found or expired, chat_id_not_found\")"
+  },
+  {
+   "ts": 1793977858.43,
+   "checkpoint": "thermal",
+   "model": "vela-2.0-9b",
+   "action": "continue",
+   "chatID": "0c8fc5ee9cc8705c",
+   "fallback": false,
+   "status": "no provider listed for this model now"
+  },
+  {
+   "ts": 1793977864.049,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "a20c98b8-db8f-9910-9205-34d38d0e426a",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793977954.93,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "75456865-cd41-9d2c-b209-e5543b26d080",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793977977.243,
+   "checkpoint": "burst",
+   "model": "vela-2.0-9b",
+   "action": "start_recovery",
+   "chatID": "689841c303edd65a",
+   "fallback": false,
+   "status": "no provider listed for this model now"
+  },
+  {
+   "ts": 1793978050.676,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "06ed99ac-9f4e-98c2-9be0-3e7b5bee3b2a",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793978138.188,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "d8c2bc86-dd44-98d0-8450-85c689f2d819",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793978144.603,
+   "checkpoint": "thermal",
+   "model": "vela-2.0-9b",
+   "action": "continue",
+   "chatID": "6d4676e56279d046",
+   "fallback": false,
+   "status": "no provider listed for this model now"
+  },
+  {
+   "ts": 1793978227.78,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "88d46cc4-de79-9907-8790-dc7b004852ac",
    "fallback": false,
    "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
    "verifiability": "standard (not a registered 0G TEE service)",

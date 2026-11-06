@@ -1,0 +1,337 @@
+{
+ "run": "live-11061739",
+ "chain": "0G mainnet (16661)",
+ "servingContract": "0x47340d900bdFec2BD393c626E12ea0656F938d84",
+ "checkedAt": "2026-11-06T18:10:43.180Z",
+ "proven": 0,
+ "items": [
+  {
+   "ts": 1793986798.17,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "7de3fbac-9bbe-9f8c-9284-84b813add046",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793986804.461,
+   "checkpoint": "thermal",
+   "model": "vela-2.0-9b",
+   "action": "continue",
+   "chatID": "32a39bd9d87f329c",
+   "fallback": false,
+   "status": "no provider listed for this model now"
+  },
+  {
+   "ts": 1793986887.325,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "a4527313-d354-9b99-8355-73ab4adc4727",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793986905.546,
+   "checkpoint": "burst",
+   "model": "vela-2.0-9b",
+   "action": "start_recovery",
+   "chatID": "d5960b0c4b8fd7df",
+   "fallback": false,
+   "status": "no provider listed for this model now"
+  },
+  {
+   "ts": 1793986978.114,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "dd9c2604-7273-9bbb-ad82-2feeca79a0ab",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793987068.091,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "f254cac7-4dac-9c1e-9465-f4e5776753cf",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793987104.875,
+   "checkpoint": "thermal",
+   "model": "vela-2.0-9b",
+   "action": "continue",
+   "chatID": "0ae9dda9587accc3",
+   "fallback": false,
+   "status": "no provider listed for this model now"
+  },
+  {
+   "ts": 1793987157.951,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "a3c3a973-5b5f-93e7-a553-d0e812736d09",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793987248.775,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "e7c4853b-ac72-93e9-97dc-ac6e07ac1a02",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793987277.652,
+   "checkpoint": "burst",
+   "model": "vela-2.0-9b",
+   "action": "start_recovery",
+   "chatID": "6f4a3745d4957fbe",
+   "fallback": false,
+   "status": "no provider listed for this model now"
+  },
+  {
+   "ts": 1793987339.042,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "0fc899aa-4eb6-9643-915a-de58e4365f5c",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793987405.103,
+   "checkpoint": "thermal",
+   "model": "vela-2.0-9b",
+   "action": "continue",
+   "chatID": "72fecfce1cdbf6da",
+   "fallback": false,
+   "status": "no provider listed for this model now"
+  },
+  {
+   "ts": 1793987428.719,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "2ddca525-52c9-96c0-8037-ae16e8f0d0ba",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793987518.17,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "5022db97-8b95-90ed-98b6-9ba52426e011",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793987609.195,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "7da108c8-5b50-92f2-b5fb-87b7c3525745",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793987637.458,
+   "checkpoint": "burst",
+   "model": "vela-2.0-9b",
+   "action": "start_recovery",
+   "chatID": "70543510b98d22c2",
+   "fallback": false,
+   "status": "no provider listed for this model now"
+  },
+  {
+   "ts": 1793987734.835,
+   "checkpoint": "thermal",
+   "model": "vela-2.0-9b",
+   "action": "continue",
+   "chatID": "0087b796f8da7dc8",
+   "fallback": false,
+   "status": "no provider listed for this model now"
+  },
+  {
+   "ts": 1793987741.241,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "08fd9c2d-e26f-9d45-a7ec-07b2cfa5855a",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793987829.411,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "8e72fd82-a066-9c08-8d39-b234d23bcbc8",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793987911.097,
+   "checkpoint": "burst",
+   "model": "vela-2.0-9b",
+   "action": "start_recovery",
+   "chatID": "0d7c10513b56892c",
+   "fallback": false,
+   "status": "no provider listed for this model now"
+  },
+  {
+   "ts": 1793987921.141,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "f0447b06-bd30-98ac-9f66-724729410e95",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793988011.789,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "3cb5dbde-9745-9c5f-9a29-aba3b1f33f44",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793988034.87,
+   "checkpoint": "thermal",
+   "model": "vela-2.0-9b",
+   "action": "continue",
+   "chatID": "5678ed35b4027a88",
+   "fallback": false,
+   "status": "no provider listed for this model now"
+  },
+  {
+   "ts": 1793988102.261,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "c4a15119-6419-9c9c-83ea-39ddd5472649",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793988191.951,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "6ee79396-c6c6-918f-878f-fb8a8cef3338",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793988271.022,
+   "checkpoint": "burst",
+   "model": "vela-2.0-9b",
+   "action": "start_recovery",
+   "chatID": "c3e1896067197971",
+   "fallback": false,
+   "status": "no provider listed for this model now"
+  },
+  {
+   "ts": 1793988284.014,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "ec64e22e-3659-9c08-bc95-65f894c19e0c",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793988335.151,
+   "checkpoint": "thermal",
+   "model": "vela-2.0-9b",
+   "action": "continue",
+   "chatID": "be93dbb108ece1e9",
+   "fallback": false,
+   "status": "no provider listed for this model now"
+  },
+  {
+   "ts": 1793988372.512,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "51873406-68de-9ed5-90b8-36bc2fdb4026",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793988461.725,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "a130b895-2c7a-9f54-887c-67ed661dd244",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793988552.037,
+   "checkpoint": "vision",
+   "model": "qwen3-vl-plus",
+   "action": "drop",
+   "chatID": "16b0b944-04ac-9b3f-8f50-3a9ab562da2d",
+   "fallback": false,
+   "provider": "0x000000003f486c7198d6203568a98d02b91f8044",
+   "verifiability": "standard (not a registered 0G TEE service)",
+   "status": "no TEE signature for this tier"
+  },
+  {
+   "ts": 1793988635.275,
+   "checkpoint": "thermal",
+   "model": "vela-2.0-9b",
+   "action": "continue",
+   "chatID": "fadd0906edae9881",
+   "fallback": false,
+   "status": "no provider listed for this model now"
+  }
+ ]
+}
