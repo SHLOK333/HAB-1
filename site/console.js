@@ -23,7 +23,7 @@ const R = 6371008.8, rad = d => d * Math.PI / 180
 const dist = (a, b) => { const h = Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lon - a.lon) / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)) }
 const bearing = (a, b) => { const y = Math.sin(rad(b.lon - a.lon)) * Math.cos(rad(b.lat)), x = Math.cos(rad(a.lat)) * Math.sin(rad(b.lat)) - Math.sin(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.cos(rad(b.lon - a.lon)); return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360 }
 const VERDICT_CLASS = v => (v === "VERIFIED" ? "ok" : /REJECTED/.test(v ?? "") ? "bad" : "warn")
-const ARKIV_VERDICT = { verified: "VERIFIED", fake: "FAKE REJECTED", bad_signature: "REJECTED bad signature", unverified: "ACCEPTED unverified", replay: "REPLAY REJECTED", conflict: "CONFLICT REJECTED" }
+const ARKIV_VERDICT = { unsigned: "UNSIGNED beacon restarted", verified: "VERIFIED", fake: "FAKE REJECTED", bad_signature: "REJECTED bad signature", unverified: "ACCEPTED unverified", replay: "REPLAY REJECTED", conflict: "CONFLICT REJECTED" }
 
 // ---------------------------------------------------------------- state
 const S = {
@@ -243,7 +243,7 @@ function tabs(listSel, onShow) {
   }
 }
 tabs(".dock .tabs", id => { if (id === "d-plots") renderPlots(); if (id === "d-frames") renderFrames(); if (id === "d-tx") renderTx() })
-tabs(".inspector .tabs", id => { if (id === "i-arkiv") arkivInit(); renderInspector() })
+tabs(".inspector .tabs", () => renderInspector())
 const showInspector = id => document.querySelector(`.inspector [aria-controls="${id}"]`).click()
 
 // ---------------------------------------------------------------- selection
@@ -295,7 +295,7 @@ function countVerdicts() { const c = {}; for (const f of S.frames.values()) if (
 // ---------------------------------------------------------------- inspector
 function renderInspector() {
   const vis = id => !$(id).hidden
-  if (vis("i-fix")) renderFix(); if (vis("i-pred")) renderPred(); if (vis("i-ledger")) renderLedger()
+  if (vis("i-fix")) renderFix(); if (vis("i-pred")) renderPred()
 }
 function renderFix() {
   const f = S.selected != null ? S.frames.get(S.selected) : S.lastFrame
@@ -366,26 +366,6 @@ async function loadInsights() {
   } catch (e) { S.insightsHtml = `<p class="empty">Arkiv did not answer (${esc(e.message)}).</p>` }
   if ($("zg-ins")) $("zg-ins").innerHTML = S.insightsHtml
 }
-function renderLedger() {
-  if (!S.insightsHtml && !S.insightsLoading) { S.insightsLoading = true; loadInsights() }
-  const st = linkStates()
-  $("i-ledger").innerHTML = `<h3 class="sub" style="margin-top:0">Arkiv · this session</h3>
-    ${S.arkivBatches.length ? `<ul class="list">${S.arkivBatches.slice(-8).reverse().map(b => `<li><span>${b.count} frames · seq ${b.seqs[0]}–${b.seqs.at(-1)} · ${b.ms} ms</span><span class="mono">tx ${b.tx}</span></li>`).join("")}</ul>` : `<p class="empty">${S.mode === "live" ? "No batch published yet." : "Live publishing appears here on the ground station."}</p>`}
-    ${S.arkivRun ? `<p class="status">Run entity <span class="mono">${short(S.arkivRun)}</span></p>` : ""}
-    <h3 class="sub">Hedera · x402 sales</h3>
-    ${S.sales.length ? `<ul class="list">${S.sales.slice(-8).reverse().map(s => `<li><span>${esc(s.what)}</span>${s.tx ? `<a class="mono" href="${hsTx(s.tx)}" target="_blank" rel="noopener">${esc(s.tx)}</a>` : ""}</li>`).join("")}</ul>` : `<p class="empty">No sale yet${S.mode === "live" ? " — use Buy wind in Operations." : "."}</p>`}
-    ${kvs([["Price", `${X.hedera.priceTinybar / 1e8} HBAR per reading`], ["Seller", `<a href="${hsAcct(X.hedera.merchant)}" target="_blank" rel="noopener">${X.hedera.merchant}</a>`], ["Buyer board", `<a href="${hsAcct(X.hedera.buyerBoard)}" target="_blank" rel="noopener">${X.hedera.buyerBoard}</a>`],
-      ["Allowance", `${X.hedera.allowanceHbar} HBAR · signed on the ESP32`], ["Audit topic", `<a href="https://hashscan.io/testnet/topic/${X.hedera.auditTopic}" target="_blank" rel="noopener">${X.hedera.auditTopic}</a>`]])}
-    <h3 class="sub">0G · private, verifiable decisions</h3>
-    ${kvs([["Status", st.zerog === "ok" ? "attested and answering" : X.zeroG.teeAttestedModelsListed ? `${X.zeroG.teeAttestedModelsListed} attested models listed · calls refused (no credit)` : "no TEE-attested model listed", st.zerog === "ok" ? "ok" : "warn"], ["Decision model", X.zeroG.decisionModel], ["Vision model", X.zeroG.visionModel], ["Checked", X.zeroG.checkedAt.slice(0, 16).replace("T", " ")]])}
-    <p class="caveat">${esc(X.zeroG.status)} ${X.zeroG.callsWorking ? "Each insight below names the model and whether 0G attested it." : "Every checkpoint on the payload stops safely and logs why; nothing here is shown as attested until 0G attests it."}</p>
-    <h3 class="sub">0G Chain · signed episode logs</h3>
-    ${X.zeroG.registry ? kvs([["EpisodeRegistry", `<a class="mono" href="https://chainscan-galileo.0g.ai/address/${X.zeroG.registry.address}" target="_blank" rel="noopener">${short(X.zeroG.registry.address)}</a>`],
-      ["Pi key in contract", `<span class="mono">${short(X.zeroG.registry.payloadKey)}</span>`]]) : ""}
-    ${(X.zeroG.episodes ?? []).length ? `<ul class="list">${X.zeroG.episodes.map(e => `<li><span>${esc(e.run)} · ${e.decisions} signed decisions · ${e.withRequestId} with a 0G request ID · ${e.safeStops} safe stops${e.burst ? ` · burst: <b>${esc(e.burst.action)}</b>` : ""}</span><span class="mono">root ${short(e.root)} · <a href="https://chainscan-galileo.0g.ai/tx/${e.registryTx}" target="_blank" rel="noopener">registry tx ${short(e.registryTx)}</a></span></li>`).join("")}</ul>` : ""}
-    <h3 class="sub">0G analyses stored on Arkiv</h3><div id="zg-ins">${S.insightsHtml ?? '<p class="status">Reading insights from Arkiv…</p>'}</div>
-    ${S.pi.checkpoints.length ? `<ul class="list">${S.pi.checkpoints.slice(-6).reverse().map(c => `<li><span>[${esc(c.name)}] ${esc(c.text)}</span></li>`).join("")}</ul>` : ""}`
-}
 
 // ---------------------------------------------------------------- plots + frames
 function renderPlots() {
@@ -426,7 +406,7 @@ $("frames").addEventListener("click", e => { const tr = e.target.closest("tr[dat
 // ---------------------------------------------------------------- live: ground station stream
 function frameFrom(e) { return { seq: e.seq, flightS: e.flight_s, lat: e.lat, lon: e.lon, altM: e.alt_m, rssi: e.rssi, snr: e.snr, press: e.press_hpa, temp: e.temp_c, livePa: e.live_hpa, liveC: e.live_c, liveSrc: e.live_src, hex: e.hex, beaconKey: e.beacon_key } }
 let renderQueued = false
-function refresh() { if (!renderQueued) { renderQueued = true; setTimeout(() => { renderQueued = false; draw(); drawScrub(); renderSystems(); renderInspector(); renderPlots(); renderFrames(); renderFlow(); renderMetrics(); renderRunbook() }, 120) } }
+function refresh() { if (!renderQueued) { renderQueued = true; setTimeout(() => { renderQueued = false; draw(); drawScrub(); renderSystems(); renderInspector(); renderPlots(); renderFrames(); renderFlow(); renderMetrics(); renderRunbook(); PAGES?.refresh() }, 120) } }
 function onRadio(e, at) {
   if (e.ev === "data") {
     const f = { ...(S.frames.get(e.seq) ?? {}), ...frameFrom(e), heardAt: at }
@@ -459,7 +439,7 @@ function connectLive() {
   es.addEventListener("prediction", m => { const { data, at } = JSON.parse(m.data); if (S.predictions.length && data.fromFlightS < S.predictions.at(-1).fromFlightS - 600) S.predictions = []; S.predictions.push(data); if (S.predictions.length > 300) S.predictions.shift()
     log("model", `Tawhiri re-prediction from seq ${data.fromSeq} (${fmt(data.fromAltM)} m, ${data.measuredBands} measured wind layers) · <span class="pred">lands ${data.missKm.toFixed(2)} km from actual</span> · <span class="mono">${data.ms} ms</span>`, { at, seq: data.fromSeq }); refresh() })
   es.addEventListener("arkiv", m => { const { data, at } = JSON.parse(m.data)
-    if (data.kind === "batch") { S.arkivBatches.push(data); prArkiv(data); log("arkiv", `published ${data.count} verified frames (seq ${data.seqs[0]}–${data.seqs.at(-1)}) · <span class="mono">tx ${short(data.tx)} · ${data.ms} ms</span>`, { at }) }
+    if (data.kind === "batch") { S.arkivBatches.push(data); prArkiv(data); log("arkiv", `published ${data.count} frames (seq ${data.seqs[0]}–${data.seqs.at(-1)}) · <span class="mono">tx ${short(data.tx)} · ${data.ms} ms</span>`, { at }) }
     else if (data.kind === "run") { S.arkivRun = data.entity; log("arkiv", `session entity created <span class="mono">${short(data.entity)}</span>`, { at }) }
     else log("arkiv", `<span class="warn">publish retry</span> · ${esc(data.text)}`, { at }); refresh() })
   es.addEventListener("hedera", m => { const { data, at } = JSON.parse(m.data)
@@ -816,7 +796,7 @@ async function edVerify(msg, sig) {
     return await crypto.subtle.verify({ name: "Ed25519" }, PR.key, sig, msg)
   } catch { PR.key = null; return null }                  // this browser has no Ed25519 in WebCrypto
 }
-const prVisible = () => S.view === "protocol" && !document.hidden
+const prVisible = () => S.page === "protocol" && !document.hidden
 const batchOf = seq => seq - (seq % BATCH_N)
 
 function prEnqueue(fn) { PR.queue = PR.queue.then(fn).catch(e => console.error("protocol view", e)); }
@@ -858,7 +838,7 @@ function prSlotHtml(seq, slot) {
   const label = { empty: "not heard yet", pending: "hash unknown until the salt", ok: "VERIFIED", bad: "REJECTED", missing: "not heard" }[st]
   const f = slot?.real ?? slot?.cands?.[0]
   return `<b>seq ${seq}</b>${f ? `<small>${fmt(f.d.alt)} m · ${tPlus(f.d.t)}</small><small>RSSI ${f.rssi ?? "—"} · SNR ${f.snr ?? "—"}</small>` : "<small>—</small><small>&nbsp;</small>"}
-    <span class="h mono">${slot?.hash ? `#${slot.hash}` : "# · · · ·"}</span><span class="pr-st">${label}</span>${slot?.fakes ? `<span class="fakes">${slot.fakes} forged frame${slot.fakes > 1 ? "s" : ""} dropped</span>` : ""}`
+    <span class="h mono">${slot?.hash ? `#${slot.hash}` : "# · · · ·"}</span><span class="pr-st">${label}</span>${slot?.fakes ? `<span class="fakes">${slot.fakes} forged frame${slot.fakes > 1 ? "s" : ""} dropped</span>` : ""}${slot?.unsigned ? `<small>${slot.unsigned} older frame${slot.unsigned > 1 ? "s" : ""} with this seq, from before a beacon restart: unsigned</small>` : ""}`
 }
 function prRenderBatch() {
   const b = PR.cur
@@ -880,11 +860,25 @@ function prData(e, at) {
   const bytes = unhex(e.hex), d = decodeData(bytes), first = batchOf(d.seq)
   prEnqueue(async () => {
     const animate = prAnimate(at)
+    // A frame for a batch whose signature was already heard can never be verified: a forger
+    // who saw the salt is too late. Check it against that batch's signed hash and count it.
+    const signed = PR.batches.slice(0, 3).find(b => b.first === first && b.sig)
+    if (signed) {
+      await prAir("data", bytes.length, `DATA seq ${d.seq} (late)`, animate)
+      await prBytes(bytes, DATA_FIELDS, d, `Data frame · seq ${d.seq} · heard after its batch was signed`, `28 B · RSSI ${e.rssi} dBm`, animate)
+      const h = await sha4(unhex(signed.sig.salt), bytes), i = d.seq - first
+      if (h !== signed.sig.hashes[i] && !(signed.late ??= new Set()).has(e.hex)) {
+        signed.late.add(e.hex); signed.fk = (signed.fk ?? 0) + 1
+        $("pr-proof").innerHTML = `<div><span class="bad">seq ${d.seq} heard after the batch signature: hash ${h} ≠ signed ${signed.sig.hashes[i]} · forged frame rejected</span></div>`
+        prRenderHist(false)
+      }
+      return
+    }
     if (!PR.cur || PR.cur.first !== first) prNewBatch(first)
     await prAir("data", bytes.length, `DATA seq ${d.seq}`, animate)
     await prBytes(bytes, DATA_FIELDS, d, `Data frame · seq ${d.seq}`, `28 B · ${airtimeMs(28).toFixed(1)} ms on air · RSSI ${e.rssi} dBm · SNR ${e.snr} dB`, animate)
     const s = PR.cur.slots.get(d.seq) ?? { cands: [], state: "pending" }
-    if (!s.cands.some(c => c.hex === e.hex)) s.cands.push({ hex: e.hex, bytes, d, rssi: e.rssi, snr: e.snr })
+    if (!s.cands.some(c => c.hex === e.hex)) s.cands.push({ hex: e.hex, bytes, d, rssi: e.rssi, snr: e.snr, at: at ?? Date.now() })
     s.state = s.state === "ok" ? "ok" : "pending"
     PR.cur.slots.set(d.seq, s); prSlotUpdate(d.seq, animate ? "land" : null)
   })
@@ -906,6 +900,9 @@ function prSig(e, at) {
     const salt = unhex(g.salt)
     for (let i = 0; i < BATCH_N; i++) {
       const seq = g.first + i, s = b.slots.get(seq) ?? { cands: [] }; b.slots.set(seq, s)
+      // heard more than 150 s before this SIG: from before a beacon restart, never signed (same rule as ground/verifier.py)
+      const sigAt = at ?? Date.now(), stale = s.cands.filter(c => sigAt - (c.at ?? sigAt) > 150000)
+      s.unsigned = stale.length; s.cands = s.cands.filter(c => !stale.includes(c))
       let real = null, fakes = 0
       for (const c of s.cands) { const h = await sha4(salt, c.bytes); if (h === g.hashes[i] && !real) { real = c; s.hash = h } else fakes++ }
       s.real = real; s.fakes = fakes; s.state = real ? "ok" : s.cands.length ? "bad" : "missing"; s.hash ??= s.cands.length ? await sha4(salt, s.cands[0].bytes) : null
@@ -914,11 +911,13 @@ function prSig(e, at) {
     }
     const valid = await edVerify(bytes.subarray(0, 36), bytes.subarray(36, 100))
     b.edBrowser = valid; b.edStation = e.valid
-    const n = [...b.slots.values()].filter(s => s.state === "ok").length, fk = [...b.slots.values()].reduce((a, s) => a + (s.fakes ?? 0), 0)
+    const n = [...b.slots.values()].filter(s => s.state === "ok").length, fk = [...b.slots.values()].reduce((a, s) => a + (s.fakes ?? 0), 0), us = [...b.slots.values()].reduce((a, s) => a + (s.unsigned ?? 0), 0)
     proof(`SHA-256(salt ‖ frame)[0:4] recomputed here for ${b.slots.size} slots: <span class="ok">${n} match the signed list</span>${fk ? ` · <span class="bad">${fk} forged frame${fk > 1 ? "s" : ""} rejected</span>` : ""}`)
     proof(valid === null ? `Ed25519 over bytes 0–35: ${e.valid ? '<span class="ok">valid</span>' : '<span class="bad">INVALID</span>'} (checked by the ground station; this browser has no Ed25519)`
       : `Ed25519 over bytes 0–35 with beacon key ${short(X.keys.beacon)}: ${valid ? '<span class="ok">valid, verified in this browser</span>' : '<span class="bad">INVALID</span>'}${e.replay ? ' · <span class="bad">replay of an older batch</span>' : ""}`)
-    PR.batches.unshift({ ...b, at: Date.now(), states: Array.from({ length: BATCH_N }, (_, i) => b.slots.get(g.first + i)?.state ?? "missing"), n, fk })
+    if (us) proof(`<span class="acc">${us} older frame${us > 1 ? "s" : ""}</span> with these seqs were heard before the beacon restarted; their batch was never signed, so they are dropped as unsigned, not counted as forged`)
+    PR.batches.unshift({ ...b, at: Date.now(), states: Array.from({ length: BATCH_N }, (_, i) => b.slots.get(g.first + i)?.state ?? "missing"), n, fk, us })
+    PR.cur = null
     if (PR.batches.length > 40) PR.batches.pop()
     prRenderHist(animate)
   })
@@ -932,7 +931,7 @@ function prRenderHist(animate) {
   $("pr-hist").innerHTML = PR.batches.length ? PR.batches.map((b, i) => `<li class="${animate && i === 0 ? "new" : ""}">
       <span class="mono">seq ${b.first}–${b.first + BATCH_N - 1}</span>
       <span class="cells">${b.states.map(s => `<i data-s="${s}"></i>`).join("")}</span>
-      <span>${b.n}/${BATCH_N} verified${b.fk ? ` · <span class="bad">${b.fk} forged</span>` : ""} · Ed25519 ${b.edBrowser ? '<span class="ok">valid (browser)</span>' : b.edBrowser === false ? '<span class="bad">invalid</span>' : b.edStation ? '<span class="ok">valid (station)</span>' : '<span class="bad">invalid</span>'}</span>
+      <span>${b.n}/${BATCH_N} verified${b.fk ? ` · <span class="bad">${b.fk} forged</span>` : ""}${b.us ? ` · ${b.us} unsigned (beacon restart)` : ""} · Ed25519 ${b.edBrowser ? '<span class="ok">valid (browser)</span>' : b.edBrowser === false ? '<span class="bad">invalid</span>' : b.edStation ? '<span class="ok">valid (station)</span>' : '<span class="bad">invalid</span>'}</span>
       <span class="mono">${b.arkivTx ? `Arkiv <a href="https://rabdi.explorer.arkiv.network/tx/${b.arkivTx}" target="_blank" rel="noopener">${short(b.arkivTx)}</a> · ${b.arkivMs} ms` : "publishing to Arkiv…"}</span></li>`).join("")
     : `<li class="pr-empty">${S.mode === "live" ? "No batch signature heard yet: one comes every 7th slot (about 84 s)." : "Archive mode: signed batches appear here live on the ground station."}</li>`
 }
@@ -951,7 +950,7 @@ for (const b of document.querySelectorAll(".viewbar [role=tab]")) b.onclick = ()
 function setView(v) {
   S.view = v; $("center").dataset.view = v
   for (const b of document.querySelectorAll(".viewbar [role=tab]")) b.setAttribute("aria-selected", b.dataset.v === v)
-  $("viewbar-note").textContent = v === "map" ? "" : v === "protocol" ? (S.mode === "live" ? "every frame as it is heard · hashes and signature re-checked in this browser" : "archive: live frames appear on the ground station") : S.mode === "live" ? "packets move when real events happen" : "archive: live packets appear on the ground station"
+  $("viewbar-note").textContent = v === "map" ? "" : S.mode === "live" ? "packets move when real events happen" : "archive: live packets appear on the ground station"
   requestAnimationFrame(() => { map.resize(); layoutFlow(); draw() })
 }
 addEventListener("resize", () => layoutFlow())
@@ -969,7 +968,29 @@ if (live) {
 }
 if (!live) S.replaying = false
 renderOps(); renderSystems(); renderInspector(); renderLog(); drawScrub(); draw(); renderTx(); renderRunbook(); renderMetrics(); prInit()
-setView(qs0.get("view") ?? (live && innerWidth >= 1500 ? "split" : "map"))
+if (qs0.get("view") === "protocol" && !location.hash) location.hash = "#/protocol"
+setView(["map", "flow", "split"].includes(qs0.get("view")) ? qs0.get("view") : live && innerWidth >= 1500 ? "split" : "map")
+
+// ---------------------------------------------------------------- sections: Mission · Protocol · Flights · 0G · Hedera · Arkiv
+// One page at a time, addressed by the URL hash, so a judge can be sent straight to #/zerog or #/hedera.
+const SECTIONS = ["mission", "protocol", "flights", "zerog", "hedera", "arkiv"]
+var PAGES = null      // var: refresh() may run before this line (live events arrive during boot)
+try {
+  const m = await import("./pages.js")
+  PAGES = m.initPages({ S, X, P, F, $, esc, fmt, short, pos, hsTx, hsAcct, tPlus, hms, dist, timeout, arkiv, val, OWNER, FLIGHT, DATASET, mapStyle, css,
+    getTheme: () => document.documentElement.dataset.theme, loadInsights, arkivInit, log, toast, op: id => $(id)?.click() })
+} catch (e) { console.error("pages", e) }
+function route() {
+  const want = location.hash.match(/^#\/(\w+)/)?.[1], page = SECTIONS.includes(want) ? want : "mission"
+  S.page = page; document.body.dataset.page = page
+  for (const a of document.querySelectorAll(".nav a")) { if (a.dataset.p === page) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current") }
+  document.title = page === "mission" ? "HAB-1 Ground Station" : `${document.querySelector(`.nav a[data-p="${page}"]`).textContent} · HAB-1`
+  if (page === "mission") requestAnimationFrame(() => { map.resize(); layoutFlow(); draw() })
+  PAGES?.show(page)
+}
+addEventListener("hashchange", route)
+for (const li of document.querySelectorAll(".links [data-go]")) li.onclick = () => { location.hash = `#/${li.dataset.go}` }
+route()
 addEventListener("resize", () => { drawScrub(); renderPlots() })
 addEventListener("keydown", e => { if (e.code === "Space" && S.mode !== "live" && !/INPUT|SELECT|TEXTAREA|BUTTON/.test(document.activeElement.tagName)) { e.preventDefault(); $("play").click() } })
 const qs = new URLSearchParams(location.search)
