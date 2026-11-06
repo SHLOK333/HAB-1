@@ -1,0 +1,10 @@
+{
+  "name": "hab-hedera",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@hiero-ledger/sdk": "^2.90.1",
+    "@x402/core": "^2.29.0",
+    "@x402/hedera": "^2.29.0"
+  }
+}
