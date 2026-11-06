@@ -1,0 +1,9 @@
+{
+  "name": "hab-arkiv",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@arkiv-network/sdk": "1.0.0",
+    "viem": "2.57.14"
+  }
+}
