@@ -16,7 +16,7 @@ export const Packet = defineSchema("boscon.hab.packet", {
   lat:       dec().indexed(),   // indexed so anyone can query a box on the map
   lon:       dec().indexed(),
   altM:      i32().indexed(),
-  verdict:   str().indexed(),   // verified | fake | bad_signature | unverified | replay | conflict
+  verdict:   str().indexed(),   // verified | fake | bad_signature | unverified | replay | conflict | unsigned
   receiver:  str(),             // receiver name, the owner wallet is $owner
   rssi:      dec(),
   snr:       dec(),
@@ -39,6 +39,7 @@ export const VERDICTS = {
   "FAKE REJECTED": "fake",
   "REJECTED bad signature": "bad_signature",
   "ACCEPTED unverified": "unverified",
+  "UNSIGNED beacon restarted": "unsigned",
   "REPLAY REJECTED": "replay",
   "CONFLICT REJECTED": "conflict",
 }

@@ -15,7 +15,7 @@ map (`web/index.html`).
 | `flightS` | i32 | yes | Seconds since release |
 | `lat`, `lon` | dec | yes | Position, degrees. Indexed so anyone can ask for a box on the map |
 | `altM` | i32 | yes | GPS altitude, m |
-| `verdict` | str | yes | `verified`, `fake`, `bad_signature`, `unverified`, `replay` (a batch older than one already accepted) or `conflict` (two frames for one seq both matched) |
+| `verdict` | str | yes | `verified`, `fake`, `bad_signature`, `unverified`, `replay` (a batch older than one already accepted) `conflict` (two frames for one seq both matched) or `unsigned` (heard, but its batch was never signed: the beacon restarted or the SIG frame was lost; never accepted) |
 | `receiver` | str | no | Receiver name, for display |
 | `rssi`, `snr` | dec | no | Signal as received, dBm and dB |
 | `frame` | bytes | no | The 28 raw bytes as heard, so anyone can re-check the signature |
