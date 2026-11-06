@@ -318,4 +318,22 @@ http.createServer((req, res) => {
   fs.createReadStream(target).pipe(res)
 }).listen(PORT, "127.0.0.1", () => console.log(`HAB-1 ground station console on http://localhost:${PORT}`))
 
+// ---------------------------------------------------------------- 0G proofs
+// A provider keeps the TEE signature of a response for about 20 minutes, so while a session
+// runs, zg/prove.mjs collects the proof of each new 0G decision every 2 minutes.
+let proving = false
+function prove() {
+  const run = state.session
+  if (proving || !run || !alive("verifier")) return
+  proving = true
+  const p = spawn("node", ["--env-file=../.env", "prove.mjs", run], { cwd: path.join(ROOT, "zg") })
+  let out = ""; p.stdout.on("data", b => (out += b)); p.stderr.on("data", () => {})
+  p.on("exit", code => {
+    proving = false
+    const m = out.match(/(\d+) of (\d+) 0G decisions proven/)
+    if (m) send("proofs", { run, proven: +m[1], decisions: +m[2], file: `data/proofs-${run}.json` })
+  })
+}
+setInterval(prove, 120000)
+
 watchVerifier(); watchPi(); health()
