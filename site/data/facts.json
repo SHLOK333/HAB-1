@@ -56,10 +56,17 @@
    "chain": "0G Galileo testnet (16602)",
    "address": "0xF7D35D2cAf0319384E3dfA2c10157f9d0B57b8Be",
    "deployTx": "0xb653aaa2abf748ac289e454629727cd578c22005ce2c65d2251dade3be9674d6",
-   "payloadKey": "82513dff297d1533f27a055b440b9efd384bc0f576a546ddb2cb546a19363c06"
+   "payloadKey": "82513dff297d1533f27a055b440b9efd384bc0f576a546ddb2cb546a19363c06",
+   "selectors": {
+    "payloadKey": "0x48b195e6",
+    "latest": "0x95305680",
+    "count": "0x0dc641e6"
+   },
+   "rpc": "https://evmrpc-testnet.0g.ai"
   },
   "episodes": [
    {
+    "index": 0,
     "run": "retest-1106",
     "root": "0x169b92e8635511f7584db2a5f1edb612584be24624befb5360effa36d8dd15eb",
     "storageTx": "0x38a55260f0a1ef0f5275371c4798d970fc398325961868b3c326f7f37acd5df4",
@@ -68,10 +75,29 @@
     "decisions": 38,
     "safeStops": 33,
     "withRequestId": 5,
-    "signaturesValid": 38,
     "burst": {
      "action": "start_recovery",
+     "model": "0gm-1.0-35b-a3b",
      "requestId": "170cc01d976c58fe, 5b202ba6-1f41-4bc5-a60d-324150ff5832"
+    }
+   },
+   {
+    "index": 1,
+    "run": "retest-1106",
+    "root": "0x224acb0973c95f2c78ebda79deec91ae3d810046d2a7e00ea79d19cff9e51563",
+    "storageTx": "0x47779295b33a4d398b4404d35c6d1bcb460fd3a0a73ca4f2c84589c72ca835f9",
+    "registryTx": "0x2b9fe7b2955e89a71686ef1e2d5bc97804c8d626ab64d882ef907da065f3a810",
+    "block": 64124830,
+    "decisions": 99,
+    "safeStops": 33,
+    "withRequestId": 66,
+    "file": "data/episode-retest-1106.jsonl",
+    "note": "same log, later snapshot: adds the Vela 2.0 9B and Laya decisions",
+    "burst": {
+     "action": "start_recovery",
+     "model": "vela-2.0-9b",
+     "p": 0.924,
+     "requestId": "0302ff40-ecab-46e2-bd4f-0d2725c85264"
     }
    }
   ],
