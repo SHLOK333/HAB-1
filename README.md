@@ -1057,6 +1057,35 @@ Transactions tab shows each one with its block and gas).
 | On the ground | seq 727 to 731: `live 939.2 to 939.3 hPa, 28.93 to 29.02 C (pi)`, all VERIFIED: the signature covers the live reading |
 | Agent stopped | from the next frames (seq 733 on), no live reading; frames still VERIFIED |
 
+### 0G over LoRa: a 0G decision reaches the payload with no internet on board (run `lora-1106`, 6 Nov 2026)
+
+In flight the payload has no internet, so 0G is reached through the radio. The ground station
+(`zg/radio_brain.mjs`) follows the verified frames, and at the burst checkpoint asks 0G exactly
+what the Pi would ask (Vela 2.0 9B, gate 0.8; if 0G's decision models are down, glm-5.3 sealed,
+then 0gm-1.0). It packs the answer into the 27-byte payload of the ground board's uplink
+(`up <hex>`): checkpoint, action, probability, model, the frame it is based on, the time, the
+first 6 bytes of the 0G request ID, and an 8-byte HMAC-SHA256 tag with a key shared before
+flight (`ZG_RADIO_KEY`). Each decision goes out in 3 consecutive uplink windows. The beacon
+(one firmware line, updated over the air) passes uplink payloads to the Pi on the tap wire as
+`UP <seq> <hex>`; the Pi checks the tag, the time (5 min) and the frame (recent), ignores
+repeats, acts, and signs the record like any other decision. The full answer (probabilities,
+request IDs, provider) stays in `zg/radio/<run>.jsonl` on the ground, matched by request ID.
+
+Measured, with the Pi's internet blocked from 22:10:09 IST (it kept its Wi-Fi only for us to watch):
+
+| Step | Result |
+|---|---|
+| Pi's own burst checks | 2 safe stops (`Connection refused`): nothing changed, nothing made up |
+| Ground station | burst checkpoint at verified seq 15 (17,239 m, 2,049 m below the peak); Vela 2.0 9B `start_recovery` P = 0.924, request `6ed50d3e-8dea-4e5c-929c-70d117a48d52`, 4 s; payload `5a0101eb010f0000004a03ee6a6ed50d3e8deada739e528b99856f`, queued for 3 uplink windows |
+| Pi | `[burst] start_recovery -> phase=descent (0G decision received over LoRa)`, request `lora:6ed50d3e8dea`, P 0.925 (one byte of resolution), signed into the episode log |
+| Checked before (bench) | a copy with one byte changed is rejected (bad tag); the same decision again is ignored |
+
+Limits: the decision arrives once the batch it is based on is verified (up to 84 s after the
+frame), which is fine for burst (the descent lasts about 55 min); only checkpoints the ground can
+see from the frames (burst) go this way; thermal stays on the Pi (safe stop when offline). The
+8-byte tag uses a key shared before flight, not the ground station's Ed25519 key, because a 64-byte
+signature does not fit in the 27-byte uplink.
+
 ### Offline: LoRa only, the Pi with no internet (run `retest-1106`, 6 Nov 2026)
 
 What a payload has in flight: no Wi-Fi, no internet. The Pi's Wi-Fi was switched off for
