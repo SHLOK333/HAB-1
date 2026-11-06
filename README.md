@@ -481,6 +481,25 @@ A static page that reads Arkiv straight from the browser: the verified track in 
 rejected fakes in red, bad signatures in orange, unchecked frames in grey. Refreshes every
 15 s. No server of ours is involved in the reads.
 
+### `station/` and `site/`: the ground station console
+
+- [`station/server.mjs`](station/server.mjs) runs on the ground station laptop (port 8090). It
+  follows the verifier, the Arkiv publisher, the x402 endpoint and the Pi's journal, and streams
+  every event to the console over Server-Sent Events. It re-predicts the landing with the
+  Tawhiri model on each verified fix and confirms each transaction on its chain.
+- [`site/`](site/index.html) is the console: map, system flow, transactions ledger, event log,
+  plots and an inspector. Without the station it opens in Archive mode, from Arkiv.
+- **Protocol view: every frame as it is received.** Each frame crosses the LoRa link, timed
+  from its real airtime (data 226.3 ms, SIG 554.0 ms, shown 4× slower). Its bytes then appear
+  one by one, grouped into decoded fields (hover a field to see its bytes). Frames wait in their
+  batch as "hash unknown until the salt". When the SIG frame arrives, its salt is shown as
+  revealed and **the browser recomputes SHA-256(salt ‖ frame)[0:4] for every frame**,
+  compares it with the signed list, and checks the beacon's Ed25519 signature with WebCrypto.
+  The browser does not take the verifier's word for it. A forged frame turns its slot's note
+  red ("forged frame dropped"). Each batch then gets its Arkiv transaction. Checked live
+  (6 Nov 2026): 40 batches re-verified in the browser, all signatures valid; a fake frame sent
+  with `./demo.sh attack` was shown as rejected next to the real seq 180.
+
 ### `hedera/`: x402 on Hedera testnet
 
 - [`server.mjs`](hedera/server.mjs) is the ground station's x402 endpoint:

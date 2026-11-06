@@ -80,6 +80,7 @@ own key and has the board sign the allowance.
 | Pitch moment | Do | Show |
 |---|---|---|
 | The real flight, replayed | nothing; wait one batch (about 84 s) | map track grows in green; `./demo.sh logs verifier` shows VERIFIED |
+| Watch the protocol | console → **Protocol** tab (or `http://localhost:8090/?view=protocol`) | each frame crosses the LoRa link and arrives byte by byte; every 7th slot the SIG frame reveals the salt and the browser re-checks each hash and the Ed25519 signature itself |
 | A fake frame | press **PRG** on the beacon, or `./demo.sh attack` | verifier: FAKE REJECTED; a red dot on the map after the next batch |
 | What HAB-1 would have done | `./demo.sh noverify`, then press PRG within 30 s | the fake is ACCEPTED. Afterwards `./demo.sh stop && ./demo.sh start demo-final-2` |
 | 0G decides | wait for the replay to pass burst (about every 6 min); `./demo.sh pi-log` | `[burst] start_recovery ... vela-2.0-9b: P(start_recovery) = 0.92, threshold 0.8` with a request ID; "0G: recovery" on the beacon screen; `[vision] drop -> deleted (laya P(empty) = 0.9)` when Laya confirms a frame is empty. In the console: Ledger tab, each 0G analysis shows "claims checked by vela-2.0-9b" |
