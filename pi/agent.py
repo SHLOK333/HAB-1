@@ -198,8 +198,9 @@ class Agent:
                     d, meta = self.zg.decide(model, SYSTEM, chat_user, list(crit))
                 except ZgUnavailable:
                     continue
-                d["fallback"] = {"from": GUARD_MODEL, "why": str(first)[:120], "calibrated": False, "tee_attested": tee}
-                d["reason"] = f"{model} (fallback, {'TEE-attested' if tee else 'not TEE-attested'}, no probability): {d.get('reason', '')}"[:200]
+                sealed = meta.get("e2ee") == "sealed"
+                d["fallback"] = {"from": GUARD_MODEL, "why": str(first)[:120], "calibrated": False, "tee_attested": tee, "sealed": sealed}
+                d["reason"] = f"{model} (fallback, {'sealed in a TEE' if sealed else 'TEE-attested' if tee else 'not TEE-attested'}, no probability): {d.get('reason', '')}"[:200]
                 return d, meta
             raise first
 

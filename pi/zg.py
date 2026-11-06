@@ -19,7 +19,11 @@ TEXT_CHECK_MODEL = "laya"
 # When 0G's decision models are down (seen 6 Nov 2026: Vela and Laya had no healthy provider),
 # a checkpoint asks these 0G chat models instead, in order. Their answers carry no calibrated
 # probability, and qwen3.6-plus is not TEE-attested; the log says both.
-CHAT_FALLBACK = [("0gm-1.0-35b-a3b", True), ("qwen3.6-plus", False)]
+# glm-5.3 was the only sealed (TeeML) model with a healthy provider then; it is asked in
+# private trust mode, so the Router can only send it to an enclave (or fail).
+CHAT_FALLBACK = [("glm-5.3", True), ("0gm-1.0-35b-a3b", True), ("qwen3.6-plus", False)]
+# per-model request options: glm-5.3 reasons first (in a separate field) and needs room for it
+MODEL_OPTS = {"glm-5.3": {"max_tokens": 1200, "headers": {"X-0G-Provider-Trust-Mode": "private"}}}
 
 
 class ZgUnavailable(Exception):
@@ -83,8 +87,9 @@ class Zg:
                        {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64," + base64.b64encode(image_jpeg).decode()}}]
         t0 = time.time()
         try:
+            opts = MODEL_OPTS.get(model, {})
             raw = self.client.chat.completions.with_raw_response.create(
-                model=model, temperature=0, max_tokens=200,
+                model=model, temperature=0, max_tokens=opts.get("max_tokens", 200), extra_headers=opts.get("headers"),
                 # 0gm-1.0-35b-a3b thinks by default and spends all 200 tokens on reasoning,
                 # leaving an empty answer (measured 6 Nov 2026); a checkpoint needs the answer.
                 extra_body={"chat_template_kwargs": {"enable_thinking": False}},
@@ -92,16 +97,17 @@ class Zg:
             resp = raw.parse()
         except Exception as e:                                   # network, auth, quota, timeout
             raise ZgUnavailable(f"{type(e).__name__}: {str(e)[:160]}")
-        meta = {"model": model, "response_id": resp.id, "latency_ms": round((time.time() - t0) * 1000),
+        meta = {"model": model, "response_id": resp.id, "e2ee": raw.headers.get("x-0g-e2ee"), "provider": raw.headers.get("x-provider"), "latency_ms": round((time.time() - t0) * 1000),
                 "request_id": raw.headers.get("x-request-id") or raw.headers.get("request-id"),
                 "headers": {k: v for k, v in raw.headers.items() if "id" in k.lower() or k.lower().startswith("x-0g")},
                 "usage": resp.usage.model_dump() if resp.usage else None}
         text = resp.choices[0].message.content or ""
-        m = re.search(r"\{.*\}", text, re.S)
-        try:
-            decision = json.loads(m.group(0)) if m else {}
-        except ValueError:
-            decision = {}
+        decision = {}
+        for cand in reversed(re.findall(r"\{[^{}]*\}", text)):    # the last JSON object is the answer
+            try:
+                decision = json.loads(cand); break
+            except ValueError:
+                continue
         if decision.get("action") not in allowed:
             raise ZgUnavailable(f"answer is not one of {allowed}: {text[:120]!r}")
         meta["raw_answer"] = text[:400]
