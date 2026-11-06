@@ -3,8 +3,9 @@
 //   -DROLE=1  BEACON  replays the 31 Oct flight (replay_data.h) one data frame per
 //                     12 s slot, adds its own live barometer, signs every 6 data
 //                     frames with Ed25519 (a SIG frame in the 7th slot), and listens
-//                     1 s after each data frame for an uplink. PRG sends one fake
-//                     frame (the demo attacker).
+//                     1 s after each data frame for an uplink. PRG, the "attack"
+//                     command or an attack uplink (frames.h) sends one fake frame
+//                     (the demo attacker).
 //   -DROLE=2  GROUND  a radio modem for the laptop: every packet it hears goes out
 //                     as one JSON line on USB serial and TCP 2323; it answers each
 //                     data frame with an uplink (an ack, or a queued "up" command).
@@ -248,6 +249,9 @@ uint32_t batchFirstSeq = 0;
 uint16_t bootCount = 0;             // this boot's number, kept in flash, signed into every SIG
 uint8_t batchSalt[4];               // secret until the batch's SIG frame (frames.h)
 bool attackPending = false, badSigPending = false;
+// An attack armed over the radio waits for its target seq; a repeat of the same target is ignored.
+bool attackAtSet = false;
+uint32_t attackAt = 0, lastAttackTarget = 0xFFFFFFFF;
 String lastUp = "UP --", lastRf = "rssi -- snr --", lastNote = "";
 uint8_t lastData[DATA_LEN];
 
@@ -514,9 +518,20 @@ void sendData() {
       bool any = false; for (int i = 5; i < UPLINK_LEN; i++) any |= up[i] != 0;
       logf("data seq %lu T%+d s %u m | up ok %lu ms rssi %.1f snr %.1f%s%s | duty %.2f%%\n",
            seq, s.flightS, s.altM, dt, rssi, snr, any ? " payload " : "", any ? hex(up + 5, UPLINK_LEN - 5).c_str() : "", dutyPct());
+      // The demo attacker, armed from the ground station over the radio, so its button works
+      // whatever network the laptop is on. Not authenticated on purpose: it only makes the
+      // beacon do what any radio in range can do (send a frame the verifier rejects). A target
+      // already past (the first copy was lost) fires now; one far off is refused.
+      if (any && up[5] == UP_ATTACK) {
+        uint32_t t = get32(up + 6);
+        if (t != lastAttackTarget && t + 12 >= seq && t <= seq + 12) {
+          lastAttackTarget = t; attackAt = max(t, seq); attackAtSet = true;
+          logf("attack armed over LoRa: fake goes out with seq %lu\n", attackAt);
+        }
+      }
       // 0G over LoRa: a decision the ground station got from 0G rides in the uplink payload;
       // pass it to the Pi as is. The Pi checks its code and freshness (the beacon does not).
-      if (any) tap.printf("UP %lu %s\n", seq, hex(up + 5, UPLINK_LEN - 5).c_str());
+      else if (any) tap.printf("UP %lu %s\n", seq, hex(up + 5, UPLINK_LEN - 5).c_str());
     } else if (rst == RADIOLIB_ERR_NONE && echo == seq &&
                ((n == REQ_LEN && up[0] == MAGIC_REQ) || (n == PAY_LEN && up[0] == MAGIC_PAY) || (n == SETTLED_LEN && up[0] == MAGIC_SETTLED))) {
       upOk++;                       // each of these is also the ack for this frame
@@ -542,8 +557,8 @@ void sendData() {
 
   // The demo attacker: a second frame claiming the same seq, saying the balloon
   // has landed 30 km away. It is never added to the signed batch.
-  if (attackPending) {
-    attackPending = false;
+  if (attackPending || (attackAtSet && seq >= attackAt)) {
+    attackPending = false; attackAtSet = false;
     // Wait until the ground has finished its uplink and is listening again: sent
     // straight after the uplink arrives, the fake started before the ground was back
     // in receive and was never heard (measured: no fake reached the verifier).

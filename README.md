@@ -517,8 +517,11 @@ two boards cannot show is a relay (A to B to the ground), which needs a third ra
   before release to 60 s after touchdown), five samples per frame so a whole flight passes in
   about 6 minutes. Generates an Ed25519 key on first boot and keeps it in flash. Signs every
   batch, listens for uplinks, copies each frame to the Pi, shows the Pi's messages on the OLED.
-  **PRG button or `attack` command:** sends one fake frame claiming the same seq, saying the
-  balloon has landed about 30 km away; it is never in a signed batch.
+  **PRG button, `attack` command or an attack uplink:** sends one fake frame claiming the same
+  seq, saying the balloon has landed about 30 km away; it is never in a signed batch. The
+  console's *Inject forged frame* button and `./demo.sh attack` send the attack uplink
+  (`[0xA7, target seq]`, [`frames.h`](firmware/hab_node/frames.h)) over LoRa through the ground
+  board, so they work whatever network the laptop is on.
 - **Role 2, ground.** A radio modem: every packet becomes one JSON line on USB, with RSSI, SNR
   and frequency error; it answers each data frame with an uplink (an ack, or a queued `up`
   command).

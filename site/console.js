@@ -507,7 +507,6 @@ function connectLive() {
     else if (data.done) {
       log("ops", `${esc(data.name)} finished · <span class="${data.code ? "bad" : "ok"}">exit ${data.code}</span>`, { at })
       if (data.name === "analyze") { S.insightsHtml = null; S.insightsLoading = false; loadInsights() }
-      if (data.name === "attack" && data.code) log("ops", `<span class="warn">The beacon is not on Wi-Fi, so the command could not reach it.</span> Press the PRG button on the beacon to send the forged frame by hand (same effect), or open the iPhone's Personal Hotspot screen so the beacon rejoins.`, { at })
     }
     else {
       const l = data.line, tx = l.match(/(0\.0\.\d+@\d+\.\d+)/)?.[1]

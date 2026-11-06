@@ -77,9 +77,9 @@ function watchVerifier() {
 function onRadio(line) {
   let e; try { e = JSON.parse(line) } catch { return }
   if (e.ev === "data") {
-    state.lastFrameAt = Date.now(); state.lastFrame = e
-    // an armed attack goes out with the batch's last data frame, so the SIG frame catches it 12 s later
-    if (attackArmed && e.seq % 6 === 4) fireAttack(e.seq)
+    // a second frame with the same seq is a forged one (the beacon's demo attacker)
+    if (state.lastFrame?.seq === e.seq) onForged(e)
+    else { state.lastFrameAt = Date.now(); state.lastFrame = e; onAttackFrame(e) }
   }
   if (e.ev === "verdict") {
     state.counts[e.verdict] = (state.counts[e.verdict] ?? 0) + 1
@@ -252,7 +252,6 @@ function health() {
 const ACTIONS = {
   start: () => ["./demo.sh", ["start", `live-${new Date().toISOString().slice(5, 16).replace(/[-:T]/g, "")}`]],
   stop: () => ["./demo.sh", ["stop"]],
-  attack: () => [".venv/bin/python", ["ground/cmd.py", "beacon", "attack"]],
   buy: b => ["./demo.sh", ["buy", String(Math.max(1000, Math.min(19000, Number(b?.alt) || 15000)))]],
   radio: () => ["./demo.sh", ["radio-x402"]],
   analyze: () => ["node", ["--env-file=../.env", "analytics.mjs"], path.join(ROOT, "mission")],
@@ -319,51 +318,61 @@ async function flyFlight(body) {
   return state.flight
 }
 
-// Forged frame, timed for a live audience. The beacon sends the fake right after its next
-// data frame, and the fake is only judged when that batch's SIG frame arrives. Armed while
-// the batch's 5th frame (seq % 6 == 4) is the latest, the fake rides with the 6th and the
-// SIG follows one slot (12 s) later: caught about 24 s after the click, not up to 84 s.
-let attackArmed = null
-function fireAttack(seq) {
-  attackArmed = null
-  send("cmd", { id: "attack-timing", name: "attack", line: `arming the beacon now: the fake goes out with seq ${seq + 1}, the last frame of batch ${seq - 4}–${seq + 1}; its SIG frame follows about 12 s later` })
-  runAction("attack", {}, true)
+// Forged frame, sent over LoRa. The station puts an attack command, [0xA7, target seq], in the
+// ground board's next uplink (ground/state/ground_cmds -> the verifier -> the ground Heltec),
+// and the beacon sends one fake frame with that seq. The button needs no network path to the
+// beacon, so it works whatever Wi-Fi the laptop is on, or with none. The fake is judged when
+// its batch's SIG frame arrives: "now" forges the next data frame (caught within about 84 s);
+// "end" forges the batch's last data frame (seq % 6 == 5), so the SIG catches it 12 s later.
+// A LoRa uplink can be lost and the beacon does not acknowledge it, so the command goes up once
+// more: before the target frame when there is time ("end"), otherwise when the target frame came
+// with no fake behind it (the beacon then forges the next frame). A repeat of a target the beacon
+// already used is ignored.
+let attack = null
+const queueUp = hex => fs.appendFileSync(path.join(ROOT, "ground", "state", "ground_cmds"), `up ${hex}\n`)
+const atkLine = (line, extra = {}) => send("cmd", { id: "attack-lora", name: "attack", line, ...extra })
+// 12 s slots: a batch is 6 data frames, then its SIG frame
+const slotsBetween = (a, b) => { let n = 0; for (let q = a + 1; q <= b; q++) n += q % 6 === 0 ? 2 : 1; return n }
+function attackOverLora(when) {
+  const e = state.lastFrame, ageMs = Date.now() - state.lastFrameAt
+  if (!e || ageMs > 60000) return { ok: false, error: "No data frames heard in the last minute: the command rides on the ground's answer to a data frame, so start a session first." }
+  if (attack) return { ok: false, error: `A forged frame is already on its way (seq ${attack.target}).` }
+  // the first data frame the command can still ride on (after a batch's 6th frame, the SIG slot comes first)
+  const nextDueMs = state.lastFrameAt + (e.seq % 6 === 5 ? 24000 : 12000)
+  const carrier = e.seq + 1 + (Date.now() > nextDueMs - 2000 ? 1 : 0)
+  const target = when === "end" ? carrier + ((5 - carrier % 6) + 6) % 6 : carrier
+  const b = Buffer.alloc(27); b[0] = 0xa7; b.writeUInt32LE(target, 1)
+  attack = { target, carrier, hex: b.toString("hex"), repeated: false }
+  queueUp(attack.hex)
+  const ageS = ageMs / 1000, fakeS = Math.max(1, Math.round(slotsBetween(e.seq, target) * 12 - ageS + 1))
+  const sigS = Math.round((slotsBetween(e.seq, target - target % 6 + 5) + 1) * 12 - ageS)
+  send("cmd", { id: "attack-lora", name: "attack", start: true, command: `LoRa uplink: up ${attack.hex.slice(0, 10)}… (target seq ${target})` })
+  atkLine(`forged-frame command sent up over LoRa (no Wi-Fi needed): the beacon sends a fake seq ${target} in about ${fakeS} s, and that batch's signature frame catches it in about ${sigS} s`)
+  return { ok: true, id: "attack-lora" }
+}
+function onAttackFrame(e) {
+  if (!attack) return
+  const a = attack
+  if (!a.repeated && e.seq >= a.carrier && e.seq < a.target) { a.repeated = true; queueUp(a.hex) }   // a second copy, still in time
+  else if (!a.repeated && e.seq >= a.target)
+    setTimeout(() => { if (attack === a && !a.repeated) { a.repeated = true; queueUp(a.hex); atkLine(`no fake heard with seq ${a.target}: the uplink was lost, so the command goes up once more and the beacon forges the next frame`) } }, 4000)
+  if (e.seq > attack.target + 3) {
+    atkLine("No forged frame was heard: the beacon did not get the command (lost twice, or the beacon runs firmware from before 7 Nov). Press the PRG button on the beacon instead.")
+    send("cmd", { id: "attack-lora", name: "attack", done: true, code: 1 }); attack = null
+  }
+}
+function onForged(e) {
+  if (!attack) return
+  atkLine(`the beacon sent the forged frame: seq ${e.seq} heard twice, the fake claiming ${e.alt_m} m at ${e.lat.toFixed(3)}, ${e.lon.toFixed(3)}; the verifier rejects it when the batch's signature frame arrives`)
+  send("cmd", { id: "attack-lora", name: "attack", done: true, code: 0 }); attack = null
 }
 // Is the beacon on the hotspot? Its log/command port (2323) answers if it is.
 function beaconOnWifi() {
   const tryIp = ip => new Promise(res => { const s = net.connect({ host: ip, port: 2323, timeout: 600 }, () => { s.destroy(); res(ip) }); s.on("error", () => res(null)); s.on("timeout", () => { s.destroy(); res(null) }) })
   return Promise.all(Array.from({ length: 13 }, (_, i) => tryIp(`172.20.10.${i + 2}`))).then(r => r.find(Boolean) ?? null)
 }
-function attackNow() {
-  const e = state.lastFrame, k = e ? (e.seq + 1) % 6 : null
-  const wait = k == null ? null : (7 - k) * 12
-  send("cmd", { id: "attack-timing", name: "attack", line: k == null ? "arming the beacon now: the fake goes out with the next frame"
-    : `arming the beacon now: the fake goes out with seq ${e.seq + 1}, frame ${k + 1} of 6 in its batch; it is caught when that batch's signature frame arrives, in about ${wait} s` })
-  runAction("attack", {}, true)
-  return { ok: true, id: "attack-now" }
-}
-function armAttack() {
-  const e = state.lastFrame, age = (Date.now() - state.lastFrameAt) / 1000
-  if (e && e.seq % 6 === 4 && age < 9) { fireAttack(e.seq); return { ok: true, id: "attack-now" } }
-  attackArmed = { at: Date.now() }
-  const k = e ? e.seq % 6 : 0, wait = e ? Math.max(0, Math.round((k === 5 ? 6 : k === 4 ? 7 : 4 - k) * 12 - age)) : null
-  send("cmd", { id: "attack-timing", name: "attack", line: `forged frame armed: waiting for the 5th frame of the batch${wait != null ? ` (about ${wait} s)` : ""}, so the signature frame catches it right after` })
-  return { ok: true, id: "attack-armed" }
-}
-
-function runAction(name, body, timed) {
-  if (name === "attack" && !timed) {
-    // check first, so the operator is not left waiting for a command that cannot reach the beacon
-    beaconOnWifi().then(ip => {
-      if (ip) return body?.when === "end" ? armAttack() : attackNow()
-      const line = diagnose().onHotspot
-        ? "The beacon is not on Wi-Fi, so this button cannot reach it. Press the PRG button on the beacon instead (the Protocol page shows the best moment), or open the iPhone's Personal Hotspot screen so the beacon rejoins."
-        : "This Mac is on another Wi-Fi network, not the iPhone hotspot, so it cannot reach the beacon. Switch the Mac's Wi-Fi to the iPhone hotspot and press again, or press the PRG button on the beacon."
-      send("cmd", { id: "attack-timing", name: "attack", line })
-      send("cmd", { id: "attack-timing", name: "attack", done: true, code: 1 })
-    })
-    return { ok: true, id: "attack-check" }
-  }
+function runAction(name, body) {
+  if (name === "attack") return attackOverLora(body?.when)
   if (running && name !== "stop") return { ok: false, error: `busy: ${running.name} is still running` }
   const [cmd, args, cwd] = ACTIONS[name](body), id = `${name}-${Date.now()}`
   const p = spawn(cmd, args, { cwd: cwd ?? ROOT, env: process.env })

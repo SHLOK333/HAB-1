@@ -145,7 +145,13 @@ case "${1:-}" in
   start)    shift; cmd_start "$@" ;;
   status)   cmd_status ;;
   stop)     cmd_stop ;;
-  attack)   .venv/bin/python ground/cmd.py beacon attack ;;
+  attack)   # the forged frame goes up to the beacon over LoRa, in the ground's next uplink (no Wi-Fi needed)
+            log=$(ls -t ground/log/verifier-*.jsonl 2>/dev/null | head -1)
+            seq=$([ -n "$log" ] && grep -h '"ev": "data"' "$log" | tail -1 | python3 -c 'import sys,json; print(json.load(sys.stdin)["seq"])' 2>/dev/null)
+            [ -n "$seq" ] || { say "no frames heard yet: start a session first"; exit 1; }
+            hex=$(python3 -c "import struct; print((bytes([0xa7]) + struct.pack('<I', $seq + 1)).ljust(27, bytes(1)).hex())")
+            echo "up $hex" >> ground/state/ground_cmds
+            say "forged-frame command queued for the next uplink: the beacon fakes seq $((seq + 1))" ;;
   buy)      shift; mkdir -p "$D/bought"
             (cd hedera && AGENT_SAVE_DIR="$D/bought" node --env-file=../.env agent.mjs "$@" 2>&1 | grep -vE "localstorage|trace-warnings")
             for f in "$D"/bought/*.json; do [ -f "$f" ] && { say "proof $(basename "$f"):"; node hedera/check_proof.mjs "$f" | sed 's/^/   /'; }; done

@@ -38,6 +38,9 @@
 //   0      magic 0xD1
 //   1..4   seq of the data frame it answers
 //   5..31  payload, 27 bytes, zero padded
+//   Payloads: 0x5A ... a 0G decision for the Pi (zg/radio_packet.mjs; the beacon passes it on)
+//             0xA7 + target seq uint32: the demo attacker, armed from the ground station
+//             (the beacon sends one forged frame with that seq; repeats are ignored)
 //
 // Radio sales: a buyer node pays for a data product with no internet, and the payment
 // settles on Hedera later, when the frames reach a ground station.
@@ -108,6 +111,7 @@
 #define MAGIC_DATA    0xB2
 #define MAGIC_SIG     0xB3
 #define MAGIC_UPLINK  0xD1
+#define UP_ATTACK     0xA7        // first payload byte of an attack command (above)
 #define DATA_LEN      28
 #define SIG_LEN       100
 #define UPLINK_LEN    32
