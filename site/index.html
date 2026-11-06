@@ -182,7 +182,35 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
       <div class="pg-aside mono" id="fl-aside"></div></header>
     <div class="fl-grid">
       <div class="card fl-list"><header><b>Flights</b><span class="mono" id="fl-count"></span></header><div id="fl-groups"></div></div>
-      <div class="card fl-mapcard"><div id="fl-map" aria-label="Map of the flights"></div><div class="fl-legend" aria-hidden="true"><span><i class="lg-track"></i>HAB-1, measured</span><span><i class="lg-pred"></i>Simulated (Tawhiri)</span><span><i class="lg-pub"></i>Public flights</span></div></div>
+      <div class="card fl-mapcard"><div id="fl-map" aria-label="Map of the flights"></div><div class="fl-legend" aria-hidden="true"><span><i class="lg-track"></i>HAB-1, measured</span><span><i class="lg-pred"></i>Simulated (Tawhiri)</span><span><i class="lg-pub"></i>Public flights</span><span class="lg-mesh" hidden id="lg-mesh"><i class="lg-link"></i>LoRa link (simulated)</span></div></div>
+    </div>
+    <div class="sim-grid">
+      <div class="card"><header><b>Simulate a flight</b><span class="mono">CUSF Tawhiri on the latest GFS, via SondeHub</span></header><div class="card-body">
+        <div class="simform">
+          <label class="wide">Launch site<select class="select" id="sf-site"></select></label>
+          <label>Latitude<input class="input mono" id="sf-lat" type="number" step="0.0001"></label>
+          <label>Longitude<input class="input mono" id="sf-lon" type="number" step="0.0001"></label>
+          <label class="wide">Launch, UTC<input class="input mono" id="sf-time" type="datetime-local"></label>
+          <label>Ascent m/s<input class="input mono" id="sf-asc" type="number" step="0.1" min="1" max="10"></label>
+          <label>Burst m<input class="input mono" id="sf-burst" type="number" step="500" min="5000" max="40000"></label>
+          <label>Descent m/s<input class="input mono" id="sf-desc" type="number" step="0.1" min="1" max="15"></label>
+        </div>
+        <div class="op-row sim-btns"><button class="btn" id="sf-pick" type="button" aria-pressed="false">Pick on map</button><button class="btn primary" id="sf-run" type="button">Simulate</button><button class="btn" id="sf-fleet" type="button" title="Six launches at the same moment from towns 55 to 230 km from our ground station, for the mesh">6-balloon fleet</button></div>
+        <p class="status" id="sf-status" role="status"></p>
+      </div></div>
+      <div class="card"><header><b>Mesh over the simulated flights</b><span class="mono">simulated · LoRa links between balloons · x402 for each relay</span></header><div class="card-body">
+        <div class="mesh-ctl">
+          <button class="btn" id="ms-play" type="button" disabled>Play</button>
+          <input type="range" id="ms-t" min="0" max="1000" value="0" aria-label="Simulated time" disabled>
+          <span class="mono" id="ms-clock">—</span>
+          <select class="select sm" id="ms-speed" aria-label="Speed"><option value="60">60×</option><option value="120">120×</option><option value="240" selected>240×</option></select>
+          <select class="select sm" id="ms-sf" aria-label="Radio"><option value="9" selected>SF9 · our link</option><option value="12">SF12 · long range</option></select>
+        </div>
+        <label class="ms-opt"><input type="checkbox" id="ms-allgs"> a ground station at every launch site (default: only ours, at the HAB-1 pad)</label>
+        <dl class="kpis small" id="ms-kpis"></dl>
+        <ol class="ms-log mono" id="ms-log"></ol>
+        <p class="caveat" id="ms-note"></p>
+      </div></div>
     </div>
     <div class="card"><header><b>Compare</b><span class="mono">distances are great-circle, from first to last fix</span></header><div class="tbl-wrap"><table class="grid" id="fl-table"></table></div></div>
   </div>
