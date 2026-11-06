@@ -637,12 +637,22 @@ function onTx(t) {
   log(t.chain === "arkiv" ? "arkiv" : "hedera", `${t.status === "confirmed" ? '<span class="ok">confirmed</span>' : t.status === "failed" ? '<span class="bad">failed</span>' : '<span class="warn">submitted</span>'} · ${esc(t.kind)} · ${esc(t.summary ?? "")}${t.block ? ` · <span class="mono">block ${fmt(t.block)}</span>` : ""}`, { link: t.explorer ? { href: t.explorer, text: "Explorer" } : undefined })
   renderTx(); renderRunbook(); renderMetrics(); renderFlow()
 }
+// All-time sales, from the HCS audit topic on the mirror node (every sale writes one message).
+async function loadHbarAll() {
+  try {
+    const r = await (await fetch(`https://testnet.mirrornode.hedera.com/api/v1/topics/${X.hedera.auditTopic}/messages?order=desc&limit=100`)).json()
+    let tinybar = 0
+    for (const m of r.messages ?? []) { try { const j = JSON.parse(atob(m.message)); tinybar += Number(j.amount_tinybar ?? j.price_tinybar ?? 0) } catch {} }
+    S.hbarAll = { tinybar, sales: (r.messages ?? []).length }; renderTx()
+  } catch {}
+}
+loadHbarAll(); setInterval(loadHbarAll, 30000)
 function renderTx() {
   const all = [...S.txs.values()].sort((a, b) => (b.submittedAt ?? b.firstSeen) - (a.submittedAt ?? a.firstSeen))
   const conf = all.filter(t => t.status === "confirmed"), pend = all.filter(t => t.status === "submitted")
   const ark = conf.filter(t => t.chain === "arkiv" && t.latencyMs), hbar = conf.filter(t => t.chain === "hedera").reduce((s, t) => s + (t.amount ?? 0) + (t.fee ?? 0), 0)
   $("tx-count").textContent = all.length
-  $("tx-sum").innerHTML = `<span>Confirmed<b class="ok">${conf.length}</b></span><span>Pending<b class="${pend.length ? "warn" : ""}">${pend.length}</b></span><span>Arkiv entities<b>${fmt(conf.filter(t => t.chain === "arkiv").reduce((s, t) => s + (t.entities ?? 0), 0))}</b></span><span>Avg Arkiv write<b>${ark.length ? secs(Math.round(ark.reduce((s, t) => s + t.latencyMs, 0) / ark.length)) : "—"}</b></span><span>Hedera spent<b>${(hbar / 1e8).toFixed(4)} ℏ</b></span>`
+  $("tx-sum").innerHTML = `<span>Confirmed<b class="ok">${conf.length}</b></span><span>Pending<b class="${pend.length ? "warn" : ""}">${pend.length}</b></span><span>Arkiv entities<b>${fmt(conf.filter(t => t.chain === "arkiv").reduce((s, t) => s + (t.entities ?? 0), 0))}</b></span><span>Avg Arkiv write<b>${ark.length ? secs(Math.round(ark.reduce((s, t) => s + t.latencyMs, 0) / ark.length)) : "—"}</b></span><span title="Paid on Hedera since this ground station started">Hedera, this session<b>${(hbar / 1e8).toFixed(4)} ℏ</b></span><span title="Every sale on the HCS audit topic, read from the Hedera mirror node">Hedera, all time<b>${S.hbarAll ? `${(S.hbarAll.tinybar / 1e8).toFixed(2)} ℏ · ${S.hbarAll.sales} sales` : "…"}</b></span>`
   if ($("d-tx").hidden) return
   $("tx-body").innerHTML = all.length ? all.slice(0, 150).map(t => {
     const confirm = t.status !== "confirmed" ? "waiting for chain…" : t.chain === "arkiv" ? `block ${fmt(t.block)} · ${fmt(t.gas)} gas` : t.chain === "hedera" ? `consensus ${secs(t.latencyMs)} · ${t.result}` : `consensus ${hms(t.consensusAt)}`
