@@ -160,11 +160,11 @@ export function initPages(c) {
     $("hb-topic").textContent = `HCS topic ${t} · every sale, newest first · mirror node`
     const way = (title, steps, ex, exLabel, op) => `<div class="way"><h3>${title}</h3><ol>${steps.map(x => `<li>${x}</li>`).join("")}</ol>
       <div class="row">${link(hsTx(ex), exLabel)}${op && S.mode === "live" ? `<button class="btn" type="button" data-op="${op}">Run it now</button>` : ""}</div></div>`
-    $("hb-ways").innerHTML = [
+    if ($("hb-ways")) $("hb-ways").innerHTML = [
       way("x402 over HTTP", ["An agent asks for wind at an altitude", "The endpoint answers <b>402 Payment Required</b> with the price", "The agent signs a Hedera transfer; a facilitator settles it", "The data comes back with a proof for each frame"], "0.0.9185802@1793917447.840408407", "Example sale ↗", "op-buy"),
       way("Radio voucher, no internet", ["The buyer board signs a voucher and sends it over LoRa", "The beacon delivers wind computed on the Pi, signed", "On the ground the settler checks both signatures and recomputes the wind from signed frames", "It takes the price from the allowance the board signed"], "0.0.11327348@1793941589.246649214", "Example settlement ↗"),
       way("x402 over LoRa", ["REQ from the buyer board over LoRa", "<b>402</b> from the beacon: price, payTo, fee payer", "PAY: a Hedera transfer signed on the board; only 81 bytes cross the radio", "A facilitator settles it once a ground station hears it; then the beacon releases the data"], "0.0.9185802@1793919359.131480516", "Example, 30.6 s end to end ↗", "op-radio")].join("")
-    for (const b of $("hb-ways").querySelectorAll("[data-op]")) b.onclick = () => { c.op(b.dataset.op); location.hash = "#/mission" }
+    for (const b of $("hb-ways")?.querySelectorAll("[data-op]") ?? []) b.onclick = () => { c.op(b.dataset.op); location.hash = "#/mission" }
   }
   const describe = j => j.kind === "radio-voucher" ? ["Radio voucher", `wind ${j.wind?.speed_ms} m/s at ${fmt(j.wind?.alt_m)} m · voucher ${j.nonce}`, j.buyer, j.price_tinybar]
     : j.kind === "x402-radio" ? ["x402 over LoRa", `challenge ${j.challenge} · signed on the ${j.signed_on ?? "board"}`, j.payer, j.amount_tinybar]
