@@ -942,6 +942,18 @@ function prRenderHist(animate) {
       <span class="mono">${b.arkivTx ? `Arkiv <a href="https://rabdi.explorer.arkiv.network/tx/${b.arkivTx}" target="_blank" rel="noopener">${short(b.arkivTx)}</a> · ${b.arkivMs} ms` : "publishing to Arkiv…"}</span></li>`).join("")
     : `<li class="pr-empty">${S.mode === "live" ? "No batch signature heard yet: one comes every 7th slot (about 84 s)." : "Archive mode: signed batches appear here live on the ground station."}</li>`
 }
+// When to press PRG on the beacon so the fake is caught quickly: the fake rides with the next
+// data frame and is judged when its batch's SIG frame arrives. Pressed while the batch's 5th
+// frame is the latest, it goes with the 6th and the SIG catches it about 12 s later.
+function prCue() {
+  const el = $("pr-aside"); if (!el) return
+  const f = S.lastFrame, live = S.mode === "live" && S.health?.ground?.verifier
+  if (!live || !f?.heardAt) { el.innerHTML = ""; return }
+  const k = f.seq % BATCH_N, age = (Date.now() - f.heardAt) / 1000
+  if (k === 4 && age < 11) el.innerHTML = `<span class="chip ok">Press PRG on the beacon now · caught in about ${Math.max(12, Math.round(24 - age))} s</span>`
+  else { const wait = Math.max(0, Math.round((k === 5 ? 6 : k === 4 ? 7 : 4 - k) * 12 - age)); el.innerHTML = `<span class="chip">Best moment to press PRG: in ${wait} s</span> <span class="chip">or Mission → Inject forged frame (it waits for it)</span>` }
+}
+setInterval(() => { if (S.page === "protocol") prCue() }, 1000)
 function prInit() {
   prRenderHist(false)
   if (S.mode !== "live") {
