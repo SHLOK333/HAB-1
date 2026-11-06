@@ -185,7 +185,7 @@ export function initPages(c) {
     // the model's simulation of the same flight, made with the GFS forecast before launch
     if (P.hindcast?.track) addFlight({ id: "hind", group: "sim", kind: "pred", name: "Simulated · HAB-1's launch", sub: "Tawhiri on the GFS forecast for 31 Oct", startMs: Date.parse(P.hindcast.track[0].t),
       pts: P.hindcast.track.map(p => [p.lon, p.lat, p.alt]), note: `landing ${P.hindcast.errorKm.toFixed(2)} km from where HAB-1 really landed` })
-    flSimulate(); flPublic()
+    flSimulate(); flPublic(); sfInit(); meshInit()
     FL.map.on("load", flDraw)
   }
   // Tawhiri (SondeHub): the same balloon launched again from the same pad at the same time of day.
@@ -237,10 +237,11 @@ export function initPages(c) {
     const col = { track: rgb("--track"), pred: rgb("--predicted"), pub: rgb("--measured") }
     const data = FL.flights.slice().sort((a, b) => (a.id === FL.sel) - (b.id === FL.sel))
     FL.overlay.setProps({ layers: [
-      new deck.PathLayer({ id: "fl-paths", data, getPath: f => f.pts.map(p => [p[0], p[1]]), getColor: f => [...col[f.kind], f.id === FL.sel ? 255 : f.kind === "pub" ? 120 : 190],
+      new deck.PathLayer({ id: "fl-paths", data, getPath: f => f.pts.map(p => [p[0], p[1]]), getColor: f => [...col[f.kind], M.on && !f.user ? 45 : f.id === FL.sel ? 255 : f.kind === "pub" ? 120 : 190],
         getWidth: f => (f.id === FL.sel ? 3.5 : f.kind === "track" ? 2.5 : 1.5), widthUnits: "pixels", pickable: true, onClick: ({ object }) => object && flSelect(object.id),
-        getDashArray: f => (f.kind === "pred" ? [6, 4] : [0, 0]), dashJustified: true, extensions: [new deck.PathStyleExtension({ dash: true })], updateTriggers: { getColor: FL.sel, getWidth: FL.sel } }),
-      new deck.ScatterplotLayer({ id: "fl-ends", data, getPosition: f => [f.last[0], f.last[1]], getFillColor: f => [...col[f.kind], 230], getRadius: f => (f.id === FL.sel ? 5 : 3), radiusUnits: "pixels", updateTriggers: { getRadius: FL.sel } })] })
+        getDashArray: f => (f.kind === "pred" ? [6, 4] : [0, 0]), dashJustified: true, extensions: [new deck.PathStyleExtension({ dash: true })], updateTriggers: { getColor: [FL.sel, M.on], getWidth: FL.sel } }),
+      new deck.ScatterplotLayer({ id: "fl-ends", data, getPosition: f => [f.last[0], f.last[1]], getFillColor: f => [...col[f.kind], 230], getRadius: f => (f.id === FL.sel ? 5 : 3), radiusUnits: "pixels", updateTriggers: { getRadius: FL.sel } }),
+      ...meshLayers()] })
   }
   function flSelect(id, fly = true) {
     FL.sel = id; flRender(); const f = FL.flights.find(x => x.id === id)
@@ -261,6 +262,189 @@ export function initPages(c) {
       `<tr class="${f.id === FL.sel ? "sel" : ""}" data-id="${f.id}"><td>${esc(f.name)}</td><td class="${f.kind === "track" ? "" : f.kind === "pred" ? "pred" : "meas"}">${f.kind === "track" ? "measured" : f.kind === "pred" ? "simulated" : "public"}</td><td>${Number.isFinite(f.startMs) ? utc(f.startMs).slice(0, 16) : "—"}</td><td>${fmt(f.maxAlt)} m</td><td>${fmt(f.len / 1000, 1)} km</td><td class="wrap">${esc(f.note ?? "")}${hab && f !== hab && f.kind === "pub" ? ` · peak ${f.maxAlt > hab.maxAlt ? "above" : "below"} HAB-1's ${fmt(hab.maxAlt)} m` : ""}</td></tr>`).join("")}</tbody>`
     for (const r of $("fl-table").querySelectorAll("tr[data-id]")) r.onclick = () => flSelect(r.dataset.id)
     flDraw()
+  }
+
+  // ------------------------------------------------------------------------------------- simulate a flight
+  // Real places in the region; the fleet launches five balloons at the same moment so the mesh has
+  // something to connect. Altitudes are the sites' ground heights (approximate, m).
+  const SITES = [["HAB-1 pad (Solapur district)", F.pad.lat, F.pad.lon, F.pad.altM], ["Pune", 18.5204, 73.8567, 560], ["Aurangabad", 19.8762, 75.3433, 568],
+    ["Hyderabad", 17.385, 78.4867, 542], ["Kolhapur", 16.705, 74.2433, 549], ["Nagpur", 21.1458, 79.0882, 310], ["Mumbai", 19.076, 72.8777, 14], ["Bengaluru", 12.9716, 77.5946, 920],
+    ["Ahmednagar", 19.0948, 74.748, 649], ["Pandharpur", 17.6746, 75.3237, 460], ["Vijayapura", 16.8302, 75.71, 606], ["Latur", 18.4088, 76.5604, 631], ["Kalaburagi", 17.3297, 76.8343, 454]]
+  // six towns 55 to 230 km from our ground station: the far ones can only reach it through the near ones
+  const FLEET = [1, 8, 9, 10, 11, 12]
+  const SIM = { n: 0, picking: false }
+  function nextLaunch() { const r = new Date(F.release); let t = Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate(), r.getUTCHours(), r.getUTCMinutes()); if (t < Date.now() + 3600e3) t += 86400e3; return t }
+  function sfInit() {
+    $("sf-site").innerHTML = SITES.map(([n], i) => `<option value="${i}">${esc(n)}</option>`).join("") + `<option value="map">Point picked on the map</option>`
+    const setSite = i => { const s = SITES[i]; $("sf-lat").value = s[1].toFixed(4); $("sf-lon").value = s[2].toFixed(4); SIM.alt = s[3] }
+    setSite(0); $("sf-site").onchange = () => { if ($("sf-site").value !== "map") setSite(+$("sf-site").value) }
+    $("sf-time").value = new Date(nextLaunch()).toISOString().slice(0, 16)
+    $("sf-asc").value = P.balloonProfile.ascentMs; $("sf-burst").value = P.balloonProfile.burstM; $("sf-desc").value = P.balloonProfile.slDescentMs
+    $("sf-pick").onclick = () => { SIM.picking = !SIM.picking; $("sf-pick").setAttribute("aria-pressed", SIM.picking); $("sf-status").textContent = SIM.picking ? "Click the map where the balloon launches." : "" }
+    FL.map.on("click", e => { if (!SIM.picking) return; SIM.picking = false; $("sf-pick").setAttribute("aria-pressed", "false")
+      $("sf-lat").value = e.lngLat.lat.toFixed(4); $("sf-lon").value = e.lngLat.lng.toFixed(4); $("sf-site").value = "map"; SIM.alt = 0; $("sf-status").textContent = `Launch point set to ${pos(e.lngLat.lat, e.lngLat.lng)}.` })
+    $("sf-run").onclick = async () => {
+      const lat = +$("sf-lat").value, lon = +$("sf-lon").value, when = new Date($("sf-time").value + "Z").toISOString()
+      const name = $("sf-site").value === "map" ? pos(lat, lon) : SITES[+$("sf-site").value][0]
+      $("sf-run").disabled = true; $("sf-status").textContent = "Running Tawhiri…"
+      const f = await tawhiri({ name, lat, lon, alt: SIM.alt ?? 0, when, asc: +$("sf-asc").value, burst: +$("sf-burst").value, desc: +$("sf-desc").value })
+      $("sf-run").disabled = false
+      $("sf-status").textContent = f.error ? `Tawhiri did not answer: ${f.error}` : `${f.name}: lands ${pos(f.last[1], f.last[0])}, ${fmt(dist({ lat, lon }, { lat: f.last[1], lon: f.last[0] }) / 1000, 1)} km from launch, after ${fmt((f.ts.at(-1) - f.ts[0]) / 60000)} min.`
+      if (!f.error) { flSelect(f.id); meshSetup() }
+    }
+    $("sf-fleet").onclick = async () => {
+      const when = new Date($("sf-time").value + "Z").toISOString(); $("sf-fleet").disabled = true; $("sf-status").textContent = `Running Tawhiri for ${FLEET.length} launch sites…`
+      const asc = +$("sf-asc").value, burst = +$("sf-burst").value, desc = +$("sf-desc").value
+      for (const f of FL.flights.filter(f => f.user)) FL.flights.splice(FL.flights.indexOf(f), 1)     // a new fleet replaces the last one
+      const res = await Promise.all(FLEET.map(i => tawhiri({ name: SITES[i][0], lat: SITES[i][1], lon: SITES[i][2], alt: SITES[i][3], when, asc, burst, desc, fleet: true })))
+      $("sf-fleet").disabled = false
+      const bad = res.filter(r => r.error)
+      $("sf-status").textContent = bad.length ? `${res.length - bad.length} of ${FLEET.length} simulated; Tawhiri did not answer for ${bad.length}.` : `${FLEET.length} balloons launched ${when.slice(0, 16).replace("T", " ")} UTC from ${FLEET.map(i => SITES[i][0]).join(", ")}. Press Play in the mesh panel.`
+      meshSetup(); flFitSim()
+    }
+  }
+  async function tawhiri(o) {
+    const q = new URLSearchParams({ profile: "standard_profile", launch_latitude: o.lat, launch_longitude: ((o.lon % 360) + 360) % 360, launch_altitude: o.alt, launch_datetime: o.when,
+      ascent_rate: o.asc, burst_altitude: o.burst, descent_rate: o.desc })
+    try {
+      const r = await getJSON(`${SONDEHUB}/tawhiri?${q}`, 40000); if (r.error) throw new Error(r.error.description)
+      const tr = r.prediction.flatMap(x => x.trajectory)
+      const id = `user${++SIM.n}`
+      addFlight({ id, group: "sim", kind: "pred", user: true, fleet: !!o.fleet, site: [o.lon, o.lat, o.alt], name: `Simulated · ${o.name}`, sub: `launch ${o.when.slice(5, 16).replace("T", " ")} UTC · ${o.asc} m/s · burst ${fmt(o.burst)} m`,
+        startMs: Date.parse(o.when), pts: tr.map(p => [((p.longitude + 540) % 360) - 180, p.latitude, p.altitude]), ts: tr.map(p => Date.parse(p.datetime)),
+        note: `Tawhiri on GFS ${r.request?.dataset?.slice(0, 13) ?? ""}` })
+      return FL.flights.find(f => f.id === id)
+    } catch (e) { return { error: e.message } }
+  }
+  function flFitSim() {
+    const fs = FL.flights.filter(f => f.user); if (!fs.length) return
+    const all = fs.flatMap(f => f.pts), lons = all.map(p => p[0]), lats = all.map(p => p[1])
+    FL.map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 70, maxZoom: 8, duration: 700 })
+  }
+
+  // ------------------------------------------------------------------------------------- mesh (simulated)
+  // Radio model (computed, not measured): SX1262 at 14 dBm, 2.15 dBi antennas both ends, SF9 / 125 kHz
+  // sensitivity -129 dBm (datasheet), 10 dB fade margin, free-space loss at 866.1 MHz; capped by the
+  // radio horizon with a 4/3 Earth. That gives about 200 km: conservative next to the 702 to 832 km
+  // balloon records, which used high-gain gateways and slower data rates.
+  const RADIO = { txDbm: 14, antDbi: 2.15, marginDb: 10, fMHz: 866.1, sens: { 9: -129, 12: -137 } }   // SX1262 datasheet, 125 kHz
+  const budgetKm = sf => 10 ** ((RADIO.txDbm + 2 * RADIO.antDbi - RADIO.sens[sf] - RADIO.marginDb - 32.45 - 20 * Math.log10(RADIO.fMHz)) / 20)
+  let BUDGET_KM = budgetKm(9)
+  const horizonKm = (h1, h2) => 4.12 * (Math.sqrt(Math.max(h1, 0)) + Math.sqrt(Math.max(h2, 0)))
+  const FRAME_S = 60          // each balloon sends one telemetry frame per simulated minute
+  const RELAY_FEE_HBAR = 0.001 // illustrative x402 price per relayed frame per hop
+  const M = { on: false, playing: false, t: 0, t0: 0, t1: 0, last: 0, nextFrame: new Map(), packets: [], queue: new Map(), stats: null, raf: 0, log: [] }
+  const km2 = (a, b) => dist({ lat: a[1], lon: a[0] }, { lat: b[1], lon: b[0] }) / 1000
+  function meshFlights() { return FL.flights.filter(f => f.user && f.ts) }
+  function meshSetup() {
+    const fs = meshFlights(); if (!fs.length) return
+    M.t0 = Math.min(...fs.map(f => f.ts[0])); M.t1 = Math.max(...fs.map(f => f.ts.at(-1))); M.t = M.t0
+    M.nextFrame = new Map(); M.packets = []; M.queue = new Map(); M.log = []; M.routes = new Map()
+    M.stats = { direct: 0, relayed: 0, buffered: 0, hops: 0, paySigned: 0, paySettled: 0, hbar: 0 }
+    M.on = true; $("ms-play").disabled = false; $("ms-t").disabled = false; $("lg-mesh").hidden = false
+    BUDGET_KM = budgetKm(+$("ms-sf").value)
+    $("ms-note").innerHTML = `Simulated, not flown. Links use a computed radio model: SX1262 at 14 dBm, SF${$("ms-sf").value} / 125 kHz (sensitivity ${RADIO.sens[+$("ms-sf").value]} dBm), 2 dBi antennas, 10 dB margin, free space at 866 MHz, so about <b>${fmt(BUDGET_KM)} km</b>, capped by the radio horizon. SF12 reaches further but takes about 6 times the airtime of SF9, which is why the beacon uses SF9. Measured balloon LoRa records reach 702–832 km with high-gain ground antennas. Each relayed frame is paid with x402 over LoRa (REQ, 402, PAY, data, as in our two-board test, 30.6 s per purchase), at an illustrative ${RELAY_FEE_HBAR} HBAR per hop; the payment is signed on the paying balloon and settles on Hedera when it reaches a ground station. With no route to the ground, frames and payments wait on board.`
+    meshStep(0); meshRender()
+  }
+  function nodesAt(t) {
+    const balloons = meshFlights().filter(f => t >= f.ts[0] && t <= f.ts.at(-1)).map(f => {
+      let i = f.ts.findIndex(x => x > t); if (i < 1) i = f.ts.length - 1
+      const a = f.pts[i - 1], b = f.pts[i], k = Math.min(1, Math.max(0, (t - f.ts[i - 1]) / ((f.ts[i] - f.ts[i - 1]) || 1)))
+      return { id: f.id, label: f.name.replace("Simulated · ", ""), kind: "balloon", p: [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k] } })
+    const sites = $("ms-allgs").checked ? meshFlights().map(f => f.site) : [[F.pad.lon, F.pad.lat, F.pad.altM]]
+    const ground = sites.filter((s, i, a) => a.findIndex(x => x[0] === s[0] && x[1] === s[1]) === i).map((s, i) => ({ id: `gs${i}`, label: i === 0 && !$("ms-allgs").checked ? "HAB-1 ground station" : "ground station", kind: "ground", p: [s[0], s[1], s[2] + 10] }))
+    return { balloons, ground }
+  }
+  function graph(t) {
+    const { balloons, ground } = nodesAt(t), all = [...balloons, ...ground], edges = []
+    for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) {
+      const a = all[i], b = all[j]; if (a.kind === "ground" && b.kind === "ground") continue
+      const d = km2(a.p, b.p); if (d <= Math.min(BUDGET_KM, horizonKm(a.p[2], b.p[2]))) edges.push({ a, b, d })
+    }
+    // breadth-first from every ground station: hops to the ground and the next hop on the way
+    const adj = new Map(all.map(n => [n.id, []])); for (const e of edges) { adj.get(e.a.id).push(e.b); adj.get(e.b.id).push(e.a) }
+    const hops = new Map(ground.map(g => [g.id, 0])), next = new Map(), q = [...ground]
+    while (q.length) { const n = q.shift(); for (const m of adj.get(n.id)) if (!hops.has(m.id)) { hops.set(m.id, hops.get(n.id) + 1); next.set(m.id, n); q.push(m) } }
+    return { balloons, ground, edges, hops, next }
+  }
+  const short2 = s => s.split(" (")[0]
+  function mlog(cls, text) { M.log.unshift({ t: M.t, cls, text }); if (M.log.length > 60) M.log.pop() }
+  function deliver(from, g, seq, buffered, quiet) {
+    const path = [from]; let n = from; while (g.next.has(n.id)) { n = g.next.get(n.id); path.push(n) }
+    const relays = path.slice(1, -1)
+    if (!quiet) M.packets.push({ path, born: performance.now(), pay: relays.length > 0 })
+    if (relays.length) {
+      M.stats.relayed++; M.stats.hops += relays.length; M.stats.paySigned += relays.length; M.stats.paySettled += relays.length; M.stats.hbar += relays.length * RELAY_FEE_HBAR
+      const route = `${relays.map(r => short2(r.label)).join(" → ")}`
+      if (!quiet && (M.routes.get(from.id) !== route || seq % 15 === 0)) mlog("pay", `${short2(from.label)} frame ${seq} → ${route} → ground · pays ${relays.length} relay${relays.length > 1 ? "s" : ""} ${relays.length * RELAY_FEE_HBAR} HBAR over x402, settled when it lands at the ground station`)
+      M.routes.set(from.id, route)
+    } else { M.stats.direct++; if (M.routes.get(from.id) !== "") mlog("ok", `${short2(from.label)} in direct range of the ground station`); M.routes.set(from.id, "") }
+  }
+  function meshStep(dtSim) {
+    const g = graph(M.t)
+    for (const b of g.balloons) {
+      const due = M.nextFrame.get(b.id) ?? M.t; if (M.t < due) continue
+      M.nextFrame.set(b.id, due + FRAME_S * 1000)
+      const seq = Math.round((M.t - M.t0) / (FRAME_S * 1000))
+      if (g.hops.has(b.id)) {
+        const waiting = M.queue.get(b.id) ?? []
+        if (waiting.length) { mlog("ok", `${short2(b.label)} found a route: ${waiting.length} buffered frame${waiting.length > 1 ? "s" : ""} and their payments go down now`); waiting.forEach((s, i) => deliver(b, g, s, true, i > 0)); M.stats.buffered -= waiting.length; M.queue.set(b.id, []) }
+        deliver(b, g, seq, false)
+      } else {
+        const w = M.queue.get(b.id) ?? []; w.push(seq); M.queue.set(b.id, w); M.stats.buffered++
+        if (w.length === 1) mlog("warn", `${short2(b.label)} has no route to a ground station: frames wait on board`)
+      }
+    }
+    M.g = g
+  }
+  function meshRender() {
+    if (!M.on || !M.g) return
+    const g = M.g, s = M.stats, direct = g.balloons.filter(b => g.hops.get(b.id) === 1).length, relay = g.balloons.filter(b => g.hops.get(b.id) > 1).length, iso = g.balloons.length - direct - relay
+    $("ms-clock").textContent = `${new Date(M.t).toISOString().slice(11, 16)} UTC · T+${fmt((M.t - M.t0) / 60000)} min`
+    $("ms-t").value = Math.round(((M.t - M.t0) / ((M.t1 - M.t0) || 1)) * 1000)
+    kpis("ms-kpis", [["In the air", g.balloons.length, ""], ["Linked to the ground", direct, "ok", "direct"], ["Through other balloons", relay, "", "relay"], ["No route", iso, iso ? "warn" : ""],
+      ["Frames relayed", fmt(s.relayed), "", `${fmt(s.direct)} direct`], ["x402 relay payments", fmt(s.paySettled), "ok", `${s.hbar.toFixed(3)} ℏ settled`], ["Waiting on board", fmt(s.buffered), s.buffered ? "warn" : ""]])
+    $("ms-log").innerHTML = M.log.slice(0, 40).map(l => `<li><b>${new Date(l.t).toISOString().slice(11, 16)}</b><span class="${l.cls}">${esc(l.text)}</span></li>`).join("")
+    flDraw()
+  }
+  function meshLayers() {
+    if (!M.on || !M.g) return []
+    const g = M.g, col = { ok: rgb("--nominal"), acc: rgb("--accent"), warn: rgb("--caution"), text: rgb("--text"), bg: rgb("--bg") }
+    const now = performance.now(), HOP_MS = 450
+    M.packets = M.packets.filter(p => now - p.born < (p.path.length - 1) * HOP_MS + 50)
+    const pk = M.packets.map(p => { const k = Math.min((now - p.born) / HOP_MS, p.path.length - 1.0001), i = Math.floor(k), f = k - i, a = p.path[i].p, b = p.path[i + 1].p
+      return { p: [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f], pay: p.pay } })
+    const st = b => (g.hops.get(b.id) === 1 ? col.ok : g.hops.has(b.id) ? col.acc : col.warn)
+    return [
+      new deck.LineLayer({ id: "ms-links", data: g.edges, getSourcePosition: e => [e.a.p[0], e.a.p[1]], getTargetPosition: e => [e.b.p[0], e.b.p[1]],
+        getColor: e => (e.a.kind === "ground" || e.b.kind === "ground" ? [...col.ok, 170] : [...col.acc, 150]), getWidth: 1.5, widthUnits: "pixels" }),
+      new deck.ScatterplotLayer({ id: "ms-ground", data: g.ground, getPosition: n => [n.p[0], n.p[1]], getFillColor: [...col.bg, 255], getLineColor: [...col.ok, 255], stroked: true, lineWidthMinPixels: 2, getRadius: 6, radiusUnits: "pixels" }),
+      new deck.ScatterplotLayer({ id: "ms-balloons", data: g.balloons, getPosition: n => [n.p[0], n.p[1]], getFillColor: n => [...st(n), 255], getRadius: 6, radiusUnits: "pixels", stroked: true, getLineColor: [...col.bg, 255], lineWidthMinPixels: 1.5,
+        pickable: true, updateTriggers: { getFillColor: M.t } }),
+      new deck.TextLayer({ id: "ms-labels", data: g.balloons, getPosition: n => [n.p[0], n.p[1]], getText: n => `${short2(n.label)} · ${(n.p[2] / 1000).toFixed(1)} km`, getSize: 11, getColor: [...col.text, 230],
+        getPixelOffset: [9, -9], getTextAnchor: "start", fontFamily: "Red Hat Mono, monospace", characterSet: "auto", updateTriggers: { getText: M.t } }),
+      new deck.ScatterplotLayer({ id: "ms-packets", data: pk, getPosition: d => d.p, getFillColor: d => (d.pay ? [...col.acc, 255] : [...col.ok, 255]), getRadius: 3.5, radiusUnits: "pixels" })]
+  }
+  function meshTick(ts) {
+    if (!M.playing || S.page !== "flights") { M.raf = 0; return }
+    const dt = M.last ? Math.min(ts - M.last, 100) : 16; M.last = ts
+    M.t = Math.min(M.t1, M.t + dt * +$("ms-speed").value)
+    meshStep(); meshRender()
+    if (M.t >= M.t1) { M.playing = false; $("ms-play").textContent = "Replay"; mlog("ok", "all balloons have landed"); meshRender(); M.raf = 0; return }
+    M.raf = requestAnimationFrame(meshTick)
+  }
+  function meshInit() {
+    $("ms-play").onclick = () => {
+      if (!M.on) return
+      if (M.t >= M.t1) meshSetup()
+      M.playing = !M.playing; $("ms-play").textContent = M.playing ? "Pause" : "Play"; M.last = 0
+      if (M.playing && !M.raf) M.raf = requestAnimationFrame(meshTick)
+    }
+    $("ms-t").oninput = () => { if (!M.on) return; M.t = M.t0 + ((M.t1 - M.t0) * $("ms-t").value) / 1000; M.nextFrame = new Map(); meshStep(); meshRender() }
+    $("ms-allgs").onchange = () => { if (M.on) { meshStep(); meshRender() } }
+    $("ms-sf").onchange = () => { if (M.on) { const t = M.t; meshSetup(); M.t = t; meshStep(); meshRender() } }
+    $("ms-note").textContent = "Simulate a flight or a 5-balloon fleet; the mesh runs over every flight you simulate here."
+    kpis("ms-kpis", [["In the air", "—"], ["Linked to the ground", "—"], ["Through other balloons", "—"], ["x402 relay payments", "—"]])
   }
 
   // ------------------------------------------------------------------------------------- show / refresh
