@@ -1,0 +1,116 @@
+[
+ {
+  "topic": "jet-stream",
+  "model": "0gm-1.0-35b-a3b",
+  "teeAttested": true,
+  "requestId": "chatcmpl-acdee14f-e621-4f02-8431-f4572a6d7cbb",
+  "e2ee": "sealed",
+  "headline": "Jet stream at 12-14km (25.1 m/s); GFS underpredicted at 10-12km",
+  "findings": [
+   "Jet stream core identified at 12-14km altitude with measured max wind of 25.1 m/s.",
+   "Measured winds peaked at 12-14km (mean 21.7 m/s) and 10-12km (mean 21.0 m/s).",
+   "GFS model generally aligned with measurements at 6-10km and 14-20km altitudes."
+  ],
+  "anomalies": [
+   "Significant GFS underprediction at 10-12km: Model mean 17.5 m/s vs Measured mean 21.0 m/s (3.5 m/s difference).",
+   "GFS underprediction at 12-14km: Model mean 23.8 m/s vs Measured mean 21.7 m/s (2.1 m/s difference), though model max was higher.",
+   "GFS overprediction at 18-20km: Model mean 3.3 m/s vs Measured mean 4.3 m/s."
+  ],
+  "arkivQuery": "Wind where flight=hab1-2026-10-31 and dataset=mission-v1, all sources, ordered by altM",
+  "inputs": [
+   "0-2km gfs: n=6 mean=2.1 max=2.3 m/s",
+   "0-2km measured: n=13 mean=3.7 max=6.3 m/s",
+   "2-4km gfs: n=2 mean=1.9 max=1.9 m/s",
+   "2-4km measured: n=16 mean=2.4 max=5.1 m/s",
+   "4-6km measured: n=14 mean=5.4 max=7.4 m/s",
+   "4-6km gfs: n=2 mean=6.5 max=7.8 m/s",
+   "6-8km measured: n=13 mean=10.4 max=13.3 m/s",
+   "6-8km gfs: n=1 mean=10.9 max=10.9 m/s",
+   "8-10km measured: n=14 mean=17.6 max=20.8 m/s",
+   "8-10km gfs: n=1 mean=19.3 max=19.3 m/s",
+   "10-12km measured: n=11 mean=21.0 max=23.0 m/s",
+   "10-12km gfs: n=1 mean=17.5 max=17.5 m/s",
+   "12-14km measured: n=12 mean=21.7 max=25.1 m/s",
+   "12-14km gfs: n=1 mean=23.8 max=23.8 m/s",
+   "14-16km measured: n=12 mean=11.5 max=14.8 m/s",
+   "14-16km gfs: n=1 mean=14.0 max=14.0 m/s",
+   "16-18km measured: n=11 mean=6.3 max=8.1 m/s",
+   "16-18km gfs: n=1 mean=6.5 max=6.5 m/s",
+   "18-20km measured: n=9 mean=4.3 max=6.6 m/s",
+   "18-20km gfs: n=1 mean=3.3 max=3.3 m/s",
+   "20-22km gfs: n=1 mean=7.3 max=7.3 m/s",
+   "22-24km gfs: n=1 mean=4.8 max=4.8 m/s"
+  ],
+  "at": "2026-11-06T03:42:59.450Z",
+  "entityKey": "0x88d4f37dff53151504e15ff733b6fd4cb8f94b714806713948c7816820133ee5",
+  "txHash": "0x839b247f3488db438aa34fe025feaccb67420f2dd5fa0d52e13d7c1ef2c8e81f"
+ },
+ {
+  "topic": "landing-error",
+  "model": "0gm-1.0-35b-a3b",
+  "teeAttested": true,
+  "requestId": "chatcmpl-7d266bb9-05f9-4917-89c8-d2ccaf4c0402",
+  "e2ee": "sealed",
+  "headline": "Landing error drops to 0.38km at T+100min, enabling recovery drive.",
+  "findings": [
+   "Initial errors were high: 3.84km (hindcast/inflight T+0) and -1km (forecast).",
+   "Error decreased as flight progressed: 3.11km (T+10), 1.32km (T+20), 4.26km (T+30).",
+   "Error stabilized below 2km from T+60min onwards (1.14km to 1.84km).",
+   "Minimum error of 0.38km occurred at T+100min (alt=6554m).",
+   "Error increased slightly during descent: 1.46km (T+110), 1.06km (T+120)."
+  ],
+  "anomalies": [
+   "Forecast T+0min shows negative error (-1km), indicating significant initial inaccuracy.",
+   "Error spiked to 4.26km at T+30min despite altitude gain.",
+   "Error remained above 1km until T+100min, limiting early recovery precision."
+  ],
+  "arkivQuery": "Prediction where flight=hab1-2026-10-31 and dataset=mission-v1, ordered by fromFlightS",
+  "inputs": [
+   "hindcast T+0min alt=618m measuredBands=0 error=3.84km",
+   "inflight T+0min alt=476m measuredBands=0 error=3.84km",
+   "forecast T+0min alt=0m measuredBands=0 error=-1km",
+   "inflight T+10min alt=3222m measuredBands=6 error=3.11km",
+   "inflight T+20min alt=6044m measuredBands=11 error=1.32km",
+   "inflight T+30min alt=8843m measuredBands=17 error=4.26km",
+   "inflight T+40min alt=11448m measuredBands=22 error=3.59km",
+   "inflight T+50min alt=14147m measuredBands=28 error=4.03km",
+   "inflight T+60min alt=16951m measuredBands=33 error=1.14km",
+   "inflight T+70min alt=19557m measuredBands=38 error=1.84km",
+   "inflight T+80min alt=14383m measuredBands=38 error=1.8km",
+   "inflight T+90min alt=10174m measuredBands=38 error=1.42km",
+   "inflight T+100min alt=6554m measuredBands=38 error=0.38km",
+   "inflight T+110min alt=3691m measuredBands=38 error=1.46km",
+   "inflight T+120min alt=1622m measuredBands=38 error=1.06km"
+  ],
+  "at": "2026-11-06T03:43:12.169Z",
+  "entityKey": "0x07db8514e39d24e63050819bb80c163fb705d4da98511f645e68a681e975800a",
+  "txHash": "0x382e9e7439b1b119821320d778307ff5fa2308bbca7691670f2d51f30dc6b508"
+ },
+ {
+  "topic": "verification",
+  "model": "0gm-1.0-35b-a3b",
+  "teeAttested": true,
+  "requestId": "chatcmpl-b61bd755-8b2d-4661-94e7-4d4b5b58662c",
+  "e2ee": "sealed",
+  "headline": "Link stable, no attacks detected",
+  "findings": [
+   "All 243 received packets were successfully verified.",
+   "Zero packets were rejected due to bad signatures, replay attempts, or conflicts."
+  ],
+  "anomalies": [
+   "No anomalies detected; telemetry integrity is confirmed."
+  ],
+  "arkivQuery": "count(Packet) where flight=hab1-2026-10-31 and verdict=<each>, owned by this ground station",
+  "inputs": [
+   "verified: 243",
+   "fake: 0",
+   "bad_signature: 0",
+   "unverified: 0",
+   "replay: 0",
+   "conflict: 0"
+  ],
+  "at": "2026-11-06T03:44:04.676Z",
+  "entityKey": "0x1b1f6ac8d8fa210da532273ffd0582dc807c2e2165b74e6864101addbd33ddee",
+  "txHash": "0xab4712201c5db79ed5023678b937f93a26ef2ec8a5fbd867dbe7b6391f5c0212"
+ }
+]
