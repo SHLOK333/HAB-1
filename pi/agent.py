@@ -4,9 +4,14 @@ and keeps a signed episode log. When 0G cannot be reached it holds a safe state 
 says so; it never makes the decision up.
 
 Checkpoints (each one changes something on the payload):
-  burst    altitude has dropped 300 m below its peak    start_recovery | hold
-  thermal  SoC at or above --thermal-c, or every 5 min  continue | pause_camera
-  vision   every --vision-s while the camera runs        keep | drop   (the frame)
+  burst    altitude has dropped 300 m below its peak    start_recovery | hold        vela-2.0-9b
+  thermal  SoC at or above --thermal-c, or every 5 min  continue | pause_camera  vela-2.0-9b
+  vision   every --vision-s while the camera runs        keep | drop (the frame)  qwen3-vl-plus,
+           and a frame is deleted only if laya agrees from the description that it is empty
+
+Vela and Laya are 0G decision models: they answer with calibrated probabilities, so the
+payload takes the consequential action only above a threshold (GATE) and otherwise the
+safe one, and both probabilities go into the signed log.
 
 Flight state comes from the beacon over the tap line (UART, "TAP <seq> <hex>" at
 38400 baud, Heltec GPIO 6 to Pi pin 10). Decisions go back to the beacon as
@@ -19,13 +24,16 @@ Only the result goes down, and anyone can recompute it from the two signed frame
 
 usage: pi/agent.py [--run NAME] [--thermal-c 70] [--vision-s 60] [--tap /dev/ttyAMA0]
 """
-import argparse, json, math, os, struct, sys, time
+import argparse, collections, json, math, os, struct, sys, time
 
 from nacl.signing import SigningKey
 
 sys.path.insert(0, os.path.dirname(__file__))
 import sensors
-from zg import DECISION_MODEL, VISION_MODEL, Zg, ZgUnavailable
+from zg import GUARD_MODEL, TEXT_CHECK_MODEL, VISION_MODEL, Zg, ZgUnavailable
+
+# Probability a decision model must give the consequential action before the payload takes it.
+GATE = {"burst": 0.8, "thermal": 0.8, "delete_frame": 0.7}
 
 HOME = os.path.expanduser("~/ethglobal")
 SYSTEM = ("You are the decision module of a high-altitude balloon payload. "
@@ -77,6 +85,7 @@ class Agent:
         os.makedirs(os.path.join(HOME, "frames", "keep"), exist_ok=True)
         self.log_path = os.path.join(HOME, "episodes", f"{self.run}.jsonl")
         self.state, self.peak, self.phase = None, 0, "ascent"
+        self.hist = collections.deque(maxlen=8)        # (flight_s, alt_m) of the last frames
         self.camera_paused, self.safe = False, False
         self.retry_at = {}
         self.next_baro, self.last_baro = 0, None
@@ -167,10 +176,10 @@ class Agent:
     def due(self, checkpoint):
         return time.time() >= self.retry_at.get(checkpoint, 0)
 
-    def ask(self, checkpoint, model, user, allowed, inputs, image=None):
+    def ask(self, checkpoint, call):
         self.retry_at[checkpoint] = time.time() + self.RETRY_S
         try:
-            decision, meta = self.zg.decide(model, SYSTEM, user, allowed, image)
+            decision, meta = call()
             self.safe = False
             return decision, meta, None
         except ZgUnavailable as e:
@@ -182,11 +191,16 @@ class Agent:
         s = self.state
         if not s or self.phase != "ascent" or self.peak < 1000 or s["alt_m"] > self.peak - 300 or not self.due("burst"):
             return
-        inputs = {"flight": s, "peak_m": self.peak, "live": self.live()}
-        user = (f"Altitude was {self.peak} m and is now {s['alt_m']} m at T+{s['flight_s'] / 60:.1f} min, "
-                f"position {s['lat']:.4f},{s['lon']:.4f}. Actions: start_recovery (the balloon has burst, "
-                "switch to descent mode and send the recovery team), hold (keep ascent mode).")
-        d, meta, err = self.ask("burst", DECISION_MODEL, user, ["start_recovery", "hold"], inputs)
+        h = list(self.hist)
+        vs = (h[-1][1] - h[-2][1]) / (h[-1][0] - h[-2][0]) if len(h) >= 2 and h[-1][0] > h[-2][0] else None
+        inputs = {"flight": s, "peak_m": self.peak, "altitudes_m": [a for _, a in h], "vertical_ms": vs and round(vs, 2), "live": self.live()}
+        state = (f"High-altitude balloon telemetry. Altitude readings, oldest first: {', '.join(f'{a} m' for _, a in h)}. "
+                 f"Peak so far {self.peak} m; the latest reading is {self.peak - s['alt_m']} m below the peak"
+                 + (f", vertical speed {vs:+.1f} m/s." if vs is not None else "."))
+        crit = {"start_recovery": "altitude is falling after the peak: the balloon burst, start descent and recovery",
+                "hold": "altitude is still rising or the drop is not clear: keep ascent mode"}
+        d, meta, err = self.ask("burst", lambda: self.zg.choose(GUARD_MODEL, state, "Has the balloon burst? Choose what the payload should do.",
+                                                                crit, "start_recovery", GATE["burst"]))
         if err:
             self.record("burst", inputs, None, None, "held ascent mode, alert raised", err)
             self.to_beacon("SAFE STOP: no 0G"); return
@@ -202,9 +216,13 @@ class Agent:
         self.next_thermal = now + 300
         inputs = {"soc_c": round(soc, 1), "limit_c": self.a.thermal_c, "camera_paused": self.camera_paused,
                   "live": self.live()}
-        user = (f"Payload computer is at {soc:.1f} C (pause threshold {self.a.thermal_c} C). Camera is "
-                f"{'paused' if self.camera_paused else 'running'}. Actions: continue, pause_camera.")
-        d, meta, err = self.ask("thermal", DECISION_MODEL, user, ["continue", "pause_camera"], inputs)
+        state = (f"Payload computer temperature: {soc:.1f} C. Limit: {self.a.thermal_c} C. "
+                 f"Camera is {'paused' if self.camera_paused else 'running'}.")
+        crit = {"continue": "the computer is below its temperature limit: keep the camera running",
+                "pause_camera": "the computer is at or above its temperature limit: pause the camera to cool down"}
+        # The camera runs only if Vela is sure it is safe; otherwise it pauses (and resumes later).
+        d, meta, err = self.ask("thermal", lambda: self.zg.choose(GUARD_MODEL, state, "Should the payload camera keep running?",
+                                                                  crit, "continue", GATE["thermal"]))
         if err:
             # Safe state: change nothing (the camera keeps its current setting).
             self.record("thermal", inputs, None, None, "no change, alert raised", err)
@@ -227,7 +245,7 @@ class Agent:
         user = ("This is one frame from the payload camera. Only frames worth sending to the ground over a "
                 "very small radio link should be kept: Earth, horizon, sky, clouds, the balloon or anything "
                 "unusual. Blank, black, blurred or near-duplicate frames should be dropped. Actions: keep, drop.")
-        d, meta, err = self.ask("vision", VISION_MODEL, user, ["keep", "drop"], inputs, image=jpg)
+        d, meta, err = self.ask("vision", lambda: self.zg.decide(VISION_MODEL, SYSTEM, user, ["keep", "drop"], jpg))
         if err:
             # Safe state: never delete a frame without a decision; it stays in frames/.
             self.record("vision", inputs, None, None, "frame kept on disk, not queued", err); return
@@ -235,8 +253,22 @@ class Agent:
             os.replace(path, os.path.join(HOME, "frames", "keep", name))
             taken = "queued for downlink"
         else:
-            os.remove(path)
-            taken = "deleted"
+            # Deleting cannot be undone: Laya must agree from the vision model's own words.
+            try:
+                ans, lmeta = self.zg.ask_decisions(TEXT_CHECK_MODEL, "Description of a camera image: " + d.get("reason", ""),
+                                                   {"empty": {"type": "noul", "instructions": "Does the description say the image shows nothing useful?"}})
+                p_empty = float(ans["empty"]["noul"])
+            except (ZgUnavailable, KeyError, TypeError, ValueError) as e:
+                p_empty, lmeta = None, {"error": str(e)[:160]}
+            d["check"] = {"model": TEXT_CHECK_MODEL, "p_empty": p_empty and round(p_empty, 4), "threshold": GATE["delete_frame"],
+                          "request_id": lmeta.get("request_id"), "tee_verified": lmeta.get("tee_verified")}
+            if lmeta.get("request_id"):
+                meta["request_id"] = f"{meta.get('request_id')}; {TEXT_CHECK_MODEL} {lmeta['request_id']}"
+            if p_empty is not None and p_empty >= GATE["delete_frame"]:
+                os.remove(path)
+                taken = f"deleted (laya P(empty) = {p_empty:.2f})"
+            else:
+                taken = "kept on disk: laya did not confirm it is empty" + (f" (P = {p_empty:.2f})" if p_empty is not None else "")
         self.record("vision", inputs, d, meta, taken)
 
     # ------------------------------------------------------------------ loop
@@ -257,6 +289,8 @@ class Agent:
                 self.peak = max(self.peak, self.state["alt_m"])
                 if self.state["flight_s"] < 0:                 # the replay started over
                     self.phase, self.peak = "ascent", self.state["alt_m"]
+                    self.hist.clear()
+                self.hist.append((self.state["flight_s"], self.state["alt_m"]))
 
     def loop(self):
         last_status = 0
