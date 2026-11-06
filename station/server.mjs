@@ -15,6 +15,7 @@ import http from "node:http"
 import fs from "node:fs"
 import path from "node:path"
 import { spawn } from "node:child_process"
+import os from "node:os"
 import { loadGfs, measuredFromFixes, simulate, km } from "../mission/tawhiri.mjs"
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..")
@@ -213,13 +214,26 @@ function onPi(l) {
 }
 
 // ---------------------------------------------------------------- health
+// Why the radio or the payload is down, in words an operator can act on.
+function diagnose() {
+  const onHotspot = Object.values(os.networkInterfaces()).flat().some(i => i?.family === "IPv4" && i.address.startsWith("172.20.10."))
+  let verifierError = null
+  if (!alive("verifier")) {
+    try {
+      const t = fs.readFileSync(path.join(DEMO, "verifier.log"), "utf8").slice(-3000).trim().split("\n")
+      const err = t.filter(l => /Error|error:|Traceback/.test(l)).at(-1)
+      if (err) verifierError = /termios|Invalid argument|could not open port|Errno 16|busy/i.test(err) ? "the ground board's USB port would not open: unplug the ground Heltec and plug it back in" : err.trim().slice(0, 160)
+    } catch {}
+  }
+  return { onHotspot, verifierError }
+}
 const alive = name => { try { process.kill(Number(fs.readFileSync(path.join(DEMO, `${name}.pid`), "utf8")), 0); return true } catch { return false } }
 function health() {
   const now = Date.now(), usb = fs.readdirSync("/dev").some(f => f.startsWith("cu.usbserial") || f.startsWith("ttyUSB"))
   send("health", {
     ground: { usb, verifier: alive("verifier") }, beacon: { lastFrameAgeS: state.lastFrameAt ? Math.round((now - state.lastFrameAt) / 1000) : null, key: state.beaconKey },
     pi: { lastAgeS: state.pi.lastAt ? Math.round((now - state.pi.lastAt) / 1000) : null }, arkiv: { publisher: alive("publisher"), ...state.arkiv },
-    hedera: { endpoint: alive("x402"), ...state.hedera }, session: state.session, counts: state.counts, busy: running?.name ?? null })
+    hedera: { endpoint: alive("x402"), ...state.hedera }, session: state.session, counts: state.counts, busy: running?.name ?? null, diag: diagnose() })
   setTimeout(health, 2000)
 }
 
