@@ -1,0 +1,18 @@
+# The payload's decision loop, started at boot so the demo needs no laptop session on the Pi.
+# Session name: ~/ethglobal/run (written by demo.sh start); otherwise pi-<date>.
+#   sudo cp pi/hab-agent.service /etc/systemd/system/ && sudo systemctl daemon-reload
+#   sudo systemctl enable --now hab-agent
+[Unit]
+Description=HAB edge node: payload decision loop (0G checkpoints, safe stop, signed episode log)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=hab
+WorkingDirectory=/home/hab/ethglobal
+ExecStart=/bin/sh -c 'exec .venv/bin/python -u pi/agent.py --run "$(cat run 2>/dev/null || echo pi-$(date +%%Y%%m%%d))" --vision-s 90'
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
