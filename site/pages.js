@@ -106,6 +106,50 @@ export function initPages(c) {
   }
   $("zg-verify").onclick = zgVerify
 
+  // ---- proofs: TEE signature of each decision, signer registered on 0G mainnet (zg/prove.mjs)
+  const PROOF = { data: null, at: 0 }
+  const MAINNET_RPC = "https://evmrpc.0g.ai", MAINNET_SCAN = "https://chainscan.0g.ai"
+  async function zgLoadProofs() {
+    const files = [S.mode === "live" && S.health?.session && `data/proofs-${S.health.session}.json`, X.zeroG.proofs].filter(Boolean)
+    for (const f of files) { try { const r = await fetch(`${f}?t=${Date.now()}`); if (r.ok) { PROOF.data = await r.json(); PROOF.at = Date.now(); break } } catch {} }
+    zgRenderProofs()
+  }
+  function zgRenderProofs() {
+    const d = PROOF.data
+    if (!d) { $("zg-proofs").innerHTML = `<tbody><tr><td>No proofs collected yet${S.mode === "live" ? ": the station collects them every 2 minutes while a session runs" : ""}.</td></tr></tbody>`; return }
+    const proven = d.items.filter(i => i.ok), rest = d.items.filter(i => !i.ok && i.checkpoint !== "vision")
+    $("zg-proof-check").disabled = !proven.length
+    const row = i => `<tr><td>${new Date(i.ts * 1000).toISOString().slice(11, 19)}</td><td>${esc(i.checkpoint)}</td><td>${esc(i.model)}</td><td><b>${esc(i.action ?? "—")}</b></td>
+      <td class="${i.ok ? "ok" : "warn"}">${i.ok ? "✓ signed in the enclave" : esc(i.status)}</td>
+      <td>${i.teeSigner ? link(`${MAINNET_SCAN}/address/${i.teeSigner}`, short(i.teeSigner)) : "—"}</td><td title="${esc(i.image ?? "")}">${i.image ? esc(i.image.split("@")[1]?.slice(0, 19) ?? "") + "…" : "—"}</td><td>${i.sdk === true ? '<span class="ok">true</span>' : esc(String(i.sdk ?? "—"))}</td></tr>`
+    $("zg-proofs").innerHTML = `<thead><tr><th>Time (UTC)</th><th>Checkpoint</th><th>Model</th><th>Decision</th><th>Proof</th><th>Enclave signer (0G mainnet)</th><th>Enclave image</th><th>0G SDK check</th></tr></thead><tbody>${[...proven].reverse().map(row).join("")}${rest.slice(-6).reverse().map(row).join("")}</tbody>
+      <tfoot><tr><td colspan="8" class="wrap">${d.proven} of ${d.items.length} 0G decisions in run ${esc(d.run)} proven (checked ${esc(d.checkedAt.slice(0, 16).replace("T", " "))} UTC). Vision answers come from a standard-tier provider and carry no enclave signature; decisions from a provider that is down cannot be fetched until it is back.</td></tr></tfoot>`
+  }
+  async function zgProofCheck() {
+    const it = [...(PROOF.data?.items ?? [])].reverse().find(i => i.ok); if (!it) return
+    const btn = $("zg-proof-check"), steps = $("zg-proof-steps"); btn.disabled = true; steps.innerHTML = ""
+    const step = (cls, html) => { const li = document.createElement("li"); li.className = cls; li.innerHTML = `<span>${html}</span>`; steps.append(li); return li }
+    try {
+      const { ethers } = await import("https://cdn.jsdelivr.net/npm/ethers@6.13.4/+esm")
+      let s = step("run", `Reading the provider ${short(it.provider)} from the InferenceServing contract on 0G mainnet…`)
+      const abi = ["function getService(address provider) view returns ((address provider, string serviceType, string url, uint256 inputPrice, uint256 outputPrice, uint256 updatedAt, string model, string verifiability, string additionalInfo, address teeSignerAddress, bool teeSignerAcknowledged) service)"]
+      const svc = await new ethers.Contract(PROOF.data.servingContract, abi, new ethers.JsonRpcProvider(MAINNET_RPC)).getService(it.provider)
+      let info = {}; try { info = JSON.parse(svc.additionalInfo) } catch {}
+      s.className = svc.verifiability === "TeeML" ? "ok" : "bad"
+      s.firstChild.innerHTML = `On chain: model <b>${esc(svc.model)}</b>, ${esc(svc.verifiability)}, enclave signer <b>${short(svc.teeSignerAddress)}</b>, image ${esc((info.ImageDigest ?? "").slice(0, 19))}…, verifier ${esc(info.TEEVerifier ?? "?")}`
+      s = step("run", `Fetching the enclave's signature for the ${esc(it.checkpoint)} decision (${esc(it.action)}) from the provider…`)
+      let sig = null
+      try { sig = await (await fetch(`${svc.url}/v1/proxy/signature/${it.chatID}?model=${encodeURIComponent(svc.model)}`)).json() } catch {}
+      const live = !!sig?.signature; if (!live) sig = { text: it.signedText, signature: it.signature }
+      s.className = "ok"; s.firstChild.innerHTML = live ? `Provider returned the signature of response ${esc(it.chatID.slice(0, 8))}…: ${esc(sig.text.slice(0, 40))}…` : `The provider no longer holds it (kept about 20 minutes); using the copy the ground station fetched at ${esc(PROOF.data.checkedAt.slice(11, 16))} UTC`
+      const rec = ethers.verifyMessage(sig.text, sig.signature), ok = rec.toLowerCase() === svc.teeSignerAddress.toLowerCase()
+      step(ok ? "ok" : "bad", `Recovered signer <b>${short(rec)}</b> ${ok ? "= the enclave signer registered on 0G mainnet: this decision came from that model in that enclave" : "≠ the registered signer"}`)
+      step("ok", `The Pi also signed the decision with its own key, and the log is on 0G Storage under the EpisodeRegistry root (see "Check the episode log yourself").`)
+    } catch (e) { step("bad", `Stopped: ${esc(e.message)}`) }
+    btn.disabled = false
+  }
+  $("zg-proof-check").onclick = zgProofCheck
+
   // ------------------------------------------------------------------------------------- Hedera
   const HB = { msgs: [], timer: null, balances: {} }
   const ACCOUNTS = [["Paying agent (x402 over HTTP)", X.hedera.payer, "ECDSA key on the laptop"], ["Seller · payTo", X.hedera.merchant, "receives every sale; settles radio vouchers"],
@@ -453,7 +497,7 @@ export function initPages(c) {
     show(page) {
       if (!started.has(page)) {
         started.add(page)
-        if (page === "zerog") { zgStatic(); zgLoadLog().then(zgRender); c.loadInsights() }
+        if (page === "zerog") { zgStatic(); zgLoadLog().then(zgRender); c.loadInsights(); zgLoadProofs() }
         if (page === "hedera") { hbStatic(); hbLoad() }
         if (page === "arkiv") { akStatic(); c.arkivInit() }
         if (page === "flights") flInit()
@@ -464,7 +508,7 @@ export function initPages(c) {
       this.refresh()
     },
     refresh() {
-      if (S.page === "zerog" && started.has("zerog")) zgRender()
+      if (S.page === "zerog" && started.has("zerog")) { zgRender(); if (Date.now() - PROOF.at > 60000) { PROOF.at = Date.now(); zgLoadProofs() } }
       if (S.page === "arkiv" && started.has("arkiv")) akRender()
     },
   }

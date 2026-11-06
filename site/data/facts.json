@@ -109,7 +109,8 @@
     "thermal": 0.8,
     "deleteFrame": 0.7
    }
-  }
+  },
+  "proofs": "data/proofs-live-11060722.json"
  },
  "readings": {
   "recordedGB": 51.2,

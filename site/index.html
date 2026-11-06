@@ -226,6 +226,10 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
     <div class="card"><header><b>Check the episode log yourself</b><span class="mono">0G Chain · 0G Storage · Ed25519</span></header>
       <div class="card-body"><p class="lede">The Pi signs every decision with its own key. The log goes to 0G Storage and its root to the EpisodeRegistry contract, which also holds the Pi's public key. This reads the contract from 0G Chain and checks every signature in the log, here in your browser.</p>
         <button class="btn primary" id="zg-verify" type="button">Verify in this browser</button><ol class="steps mono" id="zg-steps"></ol></div></div>
+    <div class="card"><header><b>Proof of which model decided</b><span class="mono">TEE signatures, checked against 0G mainnet</span></header>
+      <div class="card-body"><p class="lede">Each answer from a sealed 0G model is signed inside its enclave. The enclave's signing key, the model and the software image are registered on 0G mainnet, so anyone can check that a payload decision came from that model in that enclave, without trusting the Router or us. The ground station collects each proof while the provider still holds the signature (about 20 minutes).</p>
+        <button class="btn primary" id="zg-proof-check" type="button" disabled>Check the latest proof in this browser</button><ol class="steps mono" id="zg-proof-steps"></ol></div>
+      <div class="tbl-wrap"><table class="grid" id="zg-proofs"></table></div></div>
     <div class="card"><header><b>0G analyses of the Arkiv data</b><span class="mono">0gm-1.0 writes · Vela marks unsupported claims · stored on Arkiv</span></header><div class="card-body" id="zg-ins"><p class="status">Reading insights from Arkiv…</p></div></div>
   </div>
 </section>
