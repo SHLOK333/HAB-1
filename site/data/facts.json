@@ -1,0 +1,83 @@
+{
+ "hedera": {
+  "network": "testnet",
+  "payer": "0.0.11326830",
+  "merchant": "0.0.11327348",
+  "buyerBoard": "0.0.11327397",
+  "auditTopic": "0.0.11327351",
+  "allowanceHbar": 1,
+  "priceTinybar": 1000000,
+  "facilitator": "https://x402.org/facilitator",
+  "facilitatorFeePayer": "0.0.9185802"
+ },
+ "keys": {
+  "beacon": "f7bf12e3c6b832c7daec9d7b21474d129183b2c7d1e0aafc1c223395c2d6d4e3",
+  "ground": "ca3798af825c97e33026ca6ff67049ec044c7b0cc504b6f304bf12846513b104",
+  "pi": "82513dff297d1533f27a055b440b9efd384bc0f576a546ddb2cb546a19363c06"
+ },
+ "arkiv": {
+  "chain": "Rabdi",
+  "chainId": 7794095,
+  "owner": "0x532cCE61F117A394D595E9fb7069f4D6CE3Bb047",
+  "dataset": "mission-v1",
+  "snapshot": {
+   "wind": 144,
+   "prediction": 128,
+   "public": 33,
+   "insight": 0,
+   "at": "2026-11-06T02:05:00+05:30"
+  },
+  "owners": [
+   "0x532cCE61F117A394D595E9fb7069f4D6CE3Bb047",
+   "0xAE1796225FFdf537eF8122dA92ACDE3D1aE9b363",
+   "0xeeeB58826006087868079C27159838a3B694721e"
+  ]
+ },
+ "zeroG": {
+  "checkedAt": "2026-11-06T11:25:00+05:30",
+  "teeAttestedModelsListed": 8,
+  "modelsListed": 124,
+  "decisionModel": "0gm-1.0-35b-a3b",
+  "visionModel": "qwen3-vl-plus",
+  "status": "0G answers on the payload: at burst the Pi asked 0gm-1.0-35b-a3b (TEE-attested) and got start_recovery, then switched to descent mode. Every decision is signed on the Pi and the episode log is on 0G Storage, its root recorded in EpisodeRegistry on 0G Chain. Three analyses of Arkiv data are stored on Arkiv with their 0G request IDs.",
+  "insightsGenerated": 3,
+  "attestedModels": [
+   "0gm-1.0-35b-a3b",
+   "laya",
+   "whisper-large-v3",
+   "qwen3-embedding-0.6b",
+   "qwen3-embedding-8b",
+   "qwen3.7-text-embedding",
+   "vela-2.0-9b",
+   "z-image-turbo"
+  ],
+  "callsWorking": true,
+  "registry": {
+   "chain": "0G Galileo testnet (16602)",
+   "address": "0xF7D35D2cAf0319384E3dfA2c10157f9d0B57b8Be",
+   "deployTx": "0xb653aaa2abf748ac289e454629727cd578c22005ce2c65d2251dade3be9674d6",
+   "payloadKey": "82513dff297d1533f27a055b440b9efd384bc0f576a546ddb2cb546a19363c06"
+  },
+  "episodes": [
+   {
+    "run": "retest-1106",
+    "root": "0x169b92e8635511f7584db2a5f1edb612584be24624befb5360effa36d8dd15eb",
+    "storageTx": "0x38a55260f0a1ef0f5275371c4798d970fc398325961868b3c326f7f37acd5df4",
+    "registryTx": "0x1736318e0ce290bb822cbbb3106806cf70a61220b40770c4ebd599115cac73c3",
+    "block": 64117778,
+    "decisions": 38,
+    "safeStops": 33,
+    "withRequestId": 5,
+    "signaturesValid": 38,
+    "burst": {
+     "action": "start_recovery",
+     "requestId": "170cc01d976c58fe, 5b202ba6-1f41-4bc5-a60d-324150ff5832"
+    }
+   }
+  ]
+ },
+ "readings": {
+  "recordedGB": 51.2,
+  "deliveredKB": 29.4
+ }
+}

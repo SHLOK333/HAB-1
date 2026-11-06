@@ -1,0 +1,2303 @@
+{
+ "flight": "hab1-2026-10-31",
+ "source": "HAB-1 flight log via firmware/hab_node/replay_data.h (60 s samples)",
+ "release": "2026-10-31T07:07:06.000Z",
+ "pad": {
+  "lat": 17.7141323,
+  "lon": 75.8295593,
+  "altM": 476
+ },
+ "burst": {
+  "lat": 17.9591866,
+  "lon": 76.0748596,
+  "altM": 19557,
+  "flightS": 4200
+ },
+ "landing": {
+  "lat": 18.1324501,
+  "lon": 76.2267456,
+  "altM": 618,
+  "flightS": 7500
+ },
+ "padToLandingKm": 62.69,
+ "meanAscentMs": 4.54,
+ "meanDescentMs": 5.74,
+ "samples": [
+  {
+   "flightS": -60,
+   "lat": 17.7141171,
+   "lon": 75.8295746,
+   "altM": 477,
+   "pressHpa": 960.3,
+   "tempC": 35.74,
+   "t": "2026-10-31T07:06:06.000Z",
+   "vzMs": -0.02,
+   "phase": "pad",
+   "altBandKm": 0,
+   "wind": null
+  },
+  {
+   "flightS": 0,
+   "lat": 17.7141323,
+   "lon": 75.8295593,
+   "altM": 476,
+   "pressHpa": 959.5,
+   "tempC": 36.48,
+   "t": "2026-10-31T07:07:06.000Z",
+   "vzMs": 3.07,
+   "phase": "ascent",
+   "altBandKm": 0,
+   "wind": {
+    "speedMs": 2.51,
+    "towardDeg": 302.7,
+    "fromDeg": 122.7,
+    "atAltM": 661
+   }
+  },
+  {
+   "flightS": 60,
+   "lat": 17.7148647,
+   "lon": 75.8283615,
+   "altM": 845,
+   "pressHpa": 919.3,
+   "tempC": 33.48,
+   "t": "2026-10-31T07:08:06.000Z",
+   "vzMs": 5.32,
+   "phase": "ascent",
+   "altBandKm": 0,
+   "wind": {
+    "speedMs": 1.91,
+    "towardDeg": 283.9,
+    "fromDeg": 103.9,
+    "atAltM": 980
+   }
+  },
+  {
+   "flightS": 120,
+   "lat": 17.7151127,
+   "lon": 75.8273087,
+   "altM": 1114,
+   "pressHpa": 892.2,
+   "tempC": 30.18,
+   "t": "2026-10-31T07:09:06.000Z",
+   "vzMs": 3.91,
+   "phase": "ascent",
+   "altBandKm": 1,
+   "wind": {
+    "speedMs": 1.91,
+    "towardDeg": 285.4,
+    "fromDeg": 105.4,
+    "atAltM": 1214
+   }
+  },
+  {
+   "flightS": 180,
+   "lat": 17.7153873,
+   "lon": 75.8262634,
+   "altM": 1314,
+   "pressHpa": 871.2,
+   "tempC": 28.77,
+   "t": "2026-10-31T07:10:06.000Z",
+   "vzMs": 3.69,
+   "phase": "ascent",
+   "altBandKm": 1,
+   "wind": {
+    "speedMs": 0.85,
+    "towardDeg": 273.6,
+    "fromDeg": 93.6,
+    "atAltM": 1436
+   }
+  },
+  {
+   "flightS": 240,
+   "lat": 17.715416,
+   "lon": 75.8257828,
+   "altM": 1557,
+   "pressHpa": 847,
+   "tempC": 27.78,
+   "t": "2026-10-31T07:11:06.000Z",
+   "vzMs": 4.08,
+   "phase": "ascent",
+   "altBandKm": 1,
+   "wind": {
+    "speedMs": 2.14,
+    "towardDeg": 263,
+    "fromDeg": 83,
+    "atAltM": 1681
+   }
+  },
+  {
+   "flightS": 300,
+   "lat": 17.7152748,
+   "lon": 75.8245773,
+   "altM": 1804,
+   "pressHpa": 822.8,
+   "tempC": 26.97,
+   "t": "2026-10-31T07:12:06.000Z",
+   "vzMs": 4.42,
+   "phase": "ascent",
+   "altBandKm": 1,
+   "wind": {
+    "speedMs": 1.7,
+    "towardDeg": 240.8,
+    "fromDeg": 60.8,
+    "atAltM": 1946
+   }
+  },
+  {
+   "flightS": 360,
+   "lat": 17.7148285,
+   "lon": 75.8237381,
+   "altM": 2088,
+   "pressHpa": 797.1,
+   "tempC": 23.88,
+   "t": "2026-10-31T07:13:06.000Z",
+   "vzMs": 4.92,
+   "phase": "ascent",
+   "altBandKm": 2,
+   "wind": {
+    "speedMs": 0.24,
+    "towardDeg": 70.4,
+    "fromDeg": 250.4,
+    "atAltM": 2242
+   }
+  },
+  {
+   "flightS": 420,
+   "lat": 17.7148724,
+   "lon": 75.8238678,
+   "altM": 2395,
+   "pressHpa": 768.9,
+   "tempC": 21.34,
+   "t": "2026-10-31T07:14:06.000Z",
+   "vzMs": 4.86,
+   "phase": "ascent",
+   "altBandKm": 2,
+   "wind": {
+    "speedMs": 3.47,
+    "towardDeg": 351.3,
+    "fromDeg": 171.3,
+    "atAltM": 2533
+   }
+  },
+  {
+   "flightS": 480,
+   "lat": 17.7167206,
+   "lon": 75.8235703,
+   "altM": 2671,
+   "pressHpa": 743.3,
+   "tempC": 19.83,
+   "t": "2026-10-31T07:15:06.000Z",
+   "vzMs": 4.56,
+   "phase": "ascent",
+   "altBandKm": 2,
+   "wind": {
+    "speedMs": 1.19,
+    "towardDeg": 325.7,
+    "fromDeg": 145.7,
+    "atAltM": 2807
+   }
+  },
+  {
+   "flightS": 540,
+   "lat": 17.7172527,
+   "lon": 75.8231888,
+   "altM": 2942,
+   "pressHpa": 719.5,
+   "tempC": 17.97,
+   "t": "2026-10-31T07:16:06.000Z",
+   "vzMs": 4.59,
+   "phase": "ascent",
+   "altBandKm": 2,
+   "wind": {
+    "speedMs": 2.47,
+    "towardDeg": 262.4,
+    "fromDeg": 82.4,
+    "atAltM": 3082
+   }
+  },
+  {
+   "flightS": 600,
+   "lat": 17.7170773,
+   "lon": 75.8218002,
+   "altM": 3222,
+   "pressHpa": 696.2,
+   "tempC": 15.92,
+   "t": "2026-10-31T07:17:06.000Z",
+   "vzMs": 4.88,
+   "phase": "ascent",
+   "altBandKm": 3,
+   "wind": {
+    "speedMs": 3.38,
+    "towardDeg": 299.8,
+    "fromDeg": 119.8,
+    "atAltM": 3375
+   }
+  },
+  {
+   "flightS": 660,
+   "lat": 17.7179852,
+   "lon": 75.820137,
+   "altM": 3528,
+   "pressHpa": 670.7,
+   "tempC": 17.08,
+   "t": "2026-10-31T07:18:06.000Z",
+   "vzMs": 5.21,
+   "phase": "ascent",
+   "altBandKm": 3,
+   "wind": {
+    "speedMs": 2.2,
+    "towardDeg": 287.1,
+    "fromDeg": 107.1,
+    "atAltM": 3688
+   }
+  },
+  {
+   "flightS": 720,
+   "lat": 17.7183342,
+   "lon": 75.8189468,
+   "altM": 3847,
+   "pressHpa": 644.1,
+   "tempC": 15.92,
+   "t": "2026-10-31T07:19:06.000Z",
+   "vzMs": 5.06,
+   "phase": "ascent",
+   "altBandKm": 3,
+   "wind": {
+    "speedMs": 1.05,
+    "towardDeg": 321.9,
+    "fromDeg": 141.9,
+    "atAltM": 3991
+   }
+  },
+  {
+   "flightS": 780,
+   "lat": 17.7187786,
+   "lon": 75.8185806,
+   "altM": 4135,
+   "pressHpa": 622,
+   "tempC": 15.37,
+   "t": "2026-10-31T07:20:06.000Z",
+   "vzMs": 4.89,
+   "phase": "ascent",
+   "altBandKm": 4,
+   "wind": {
+    "speedMs": 2.08,
+    "towardDeg": 45.4,
+    "fromDeg": 225.4,
+    "atAltM": 4285
+   }
+  },
+  {
+   "flightS": 840,
+   "lat": 17.7195683,
+   "lon": 75.8194199,
+   "altM": 4434,
+   "pressHpa": 598.3,
+   "tempC": 16.97,
+   "t": "2026-10-31T07:21:06.000Z",
+   "vzMs": 5.01,
+   "phase": "ascent",
+   "altBandKm": 4,
+   "wind": {
+    "speedMs": 3.04,
+    "towardDeg": 43.3,
+    "fromDeg": 223.3,
+    "atAltM": 4585
+   }
+  },
+  {
+   "flightS": 900,
+   "lat": 17.7207642,
+   "lon": 75.8206024,
+   "altM": 4736,
+   "pressHpa": 576.1,
+   "tempC": 14.95,
+   "t": "2026-10-31T07:22:06.000Z",
+   "vzMs": 4.87,
+   "phase": "ascent",
+   "altBandKm": 4,
+   "wind": {
+    "speedMs": 4.44,
+    "towardDeg": 52.9,
+    "fromDeg": 232.9,
+    "atAltM": 4877
+   }
+  },
+  {
+   "flightS": 960,
+   "lat": 17.7222099,
+   "lon": 75.8226089,
+   "altM": 5018,
+   "pressHpa": 555.4,
+   "tempC": 14.05,
+   "t": "2026-10-31T07:23:06.000Z",
+   "vzMs": 4.34,
+   "phase": "ascent",
+   "altBandKm": 5,
+   "wind": {
+    "speedMs": 4.96,
+    "towardDeg": 36.5,
+    "fromDeg": 216.5,
+    "atAltM": 5138
+   }
+  },
+  {
+   "flightS": 1020,
+   "lat": 17.7243614,
+   "lon": 75.8242798,
+   "altM": 5257,
+   "pressHpa": 539.3,
+   "tempC": 15.91,
+   "t": "2026-10-31T07:24:06.000Z",
+   "vzMs": 4.14,
+   "phase": "ascent",
+   "altBandKm": 5,
+   "wind": {
+    "speedMs": 6.15,
+    "towardDeg": 50.6,
+    "fromDeg": 230.6,
+    "atAltM": 5386
+   }
+  },
+  {
+   "flightS": 1080,
+   "lat": 17.726469,
+   "lon": 75.826973,
+   "altM": 5515,
+   "pressHpa": 523.7,
+   "tempC": 12.65,
+   "t": "2026-10-31T07:25:06.000Z",
+   "vzMs": 4.42,
+   "phase": "ascent",
+   "altBandKm": 5,
+   "wind": {
+    "speedMs": 5.48,
+    "towardDeg": 42.1,
+    "fromDeg": 222.1,
+    "atAltM": 5651
+   }
+  },
+  {
+   "flightS": 1140,
+   "lat": 17.7286644,
+   "lon": 75.8290558,
+   "altM": 5787,
+   "pressHpa": 505.8,
+   "tempC": 11.66,
+   "t": "2026-10-31T07:26:06.000Z",
+   "vzMs": 4.41,
+   "phase": "ascent",
+   "altBandKm": 5,
+   "wind": {
+    "speedMs": 6.58,
+    "towardDeg": 38.4,
+    "fromDeg": 218.4,
+    "atAltM": 5916
+   }
+  },
+  {
+   "flightS": 1200,
+   "lat": 17.7314472,
+   "lon": 75.8313751,
+   "altM": 6044,
+   "pressHpa": 489.7,
+   "tempC": 11.39,
+   "t": "2026-10-31T07:27:06.000Z",
+   "vzMs": 4.53,
+   "phase": "ascent",
+   "altBandKm": 6,
+   "wind": {
+    "speedMs": 6.99,
+    "towardDeg": 41.2,
+    "fromDeg": 221.2,
+    "atAltM": 6187
+   }
+  },
+  {
+   "flightS": 1260,
+   "lat": 17.7342834,
+   "lon": 75.8339844,
+   "altM": 6330,
+   "pressHpa": 472.4,
+   "tempC": 7.75,
+   "t": "2026-10-31T07:28:06.000Z",
+   "vzMs": 4.73,
+   "phase": "ascent",
+   "altBandKm": 6,
+   "wind": {
+    "speedMs": 8.65,
+    "towardDeg": 10.9,
+    "fromDeg": 190.9,
+    "atAltM": 6471
+   }
+  },
+  {
+   "flightS": 1320,
+   "lat": 17.7388687,
+   "lon": 75.8349075,
+   "altM": 6612,
+   "pressHpa": 455.1,
+   "tempC": 6.24,
+   "t": "2026-10-31T07:29:06.000Z",
+   "vzMs": 4.82,
+   "phase": "ascent",
+   "altBandKm": 6,
+   "wind": {
+    "speedMs": 10.33,
+    "towardDeg": 7.8,
+    "fromDeg": 187.8,
+    "atAltM": 6760
+   }
+  },
+  {
+   "flightS": 1380,
+   "lat": 17.7443886,
+   "lon": 75.835701,
+   "altM": 6908,
+   "pressHpa": 437.8,
+   "tempC": 2.23,
+   "t": "2026-10-31T07:30:06.000Z",
+   "vzMs": 5.03,
+   "phase": "ascent",
+   "altBandKm": 6,
+   "wind": {
+    "speedMs": 8.91,
+    "towardDeg": 23.7,
+    "fromDeg": 203.7,
+    "atAltM": 7062
+   }
+  },
+  {
+   "flightS": 1440,
+   "lat": 17.7487926,
+   "lon": 75.8377304,
+   "altM": 7215,
+   "pressHpa": 420.4,
+   "tempC": -1.18,
+   "t": "2026-10-31T07:31:06.000Z",
+   "vzMs": 5,
+   "phase": "ascent",
+   "altBandKm": 7,
+   "wind": {
+    "speedMs": 12.72,
+    "towardDeg": 23.4,
+    "fromDeg": 203.4,
+    "atAltM": 7362
+   }
+  },
+  {
+   "flightS": 1500,
+   "lat": 17.7550907,
+   "lon": 75.8405914,
+   "altM": 7508,
+   "pressHpa": 404,
+   "tempC": -0.24,
+   "t": "2026-10-31T07:32:06.000Z",
+   "vzMs": 4.66,
+   "phase": "ascent",
+   "altBandKm": 7,
+   "wind": {
+    "speedMs": 12.27,
+    "towardDeg": 21.8,
+    "fromDeg": 201.8,
+    "atAltM": 7641
+   }
+  },
+  {
+   "flightS": 1560,
+   "lat": 17.7612343,
+   "lon": 75.8431778,
+   "altM": 7774,
+   "pressHpa": 389.6,
+   "tempC": -0.1,
+   "t": "2026-10-31T07:33:06.000Z",
+   "vzMs": 4.42,
+   "phase": "ascent",
+   "altBandKm": 7,
+   "wind": {
+    "speedMs": 13.25,
+    "towardDeg": 31.4,
+    "fromDeg": 211.4,
+    "atAltM": 7907
+   }
+  },
+  {
+   "flightS": 1620,
+   "lat": 17.7673359,
+   "lon": 75.8470917,
+   "altM": 8039,
+   "pressHpa": 376.9,
+   "tempC": -2.13,
+   "t": "2026-10-31T07:34:06.000Z",
+   "vzMs": 4.3,
+   "phase": "ascent",
+   "altBandKm": 8,
+   "wind": {
+    "speedMs": 13.75,
+    "towardDeg": 28.4,
+    "fromDeg": 208.4,
+    "atAltM": 8165
+   }
+  },
+  {
+   "flightS": 1680,
+   "lat": 17.7738609,
+   "lon": 75.8507996,
+   "altM": 8290,
+   "pressHpa": 363.4,
+   "tempC": -4.5,
+   "t": "2026-10-31T07:35:06.000Z",
+   "vzMs": 4.32,
+   "phase": "ascent",
+   "altBandKm": 8,
+   "wind": {
+    "speedMs": 13.05,
+    "towardDeg": 21.4,
+    "fromDeg": 201.4,
+    "atAltM": 8424
+   }
+  },
+  {
+   "flightS": 1740,
+   "lat": 17.7804146,
+   "lon": 75.8535004,
+   "altM": 8557,
+   "pressHpa": 351.1,
+   "tempC": -7.85,
+   "t": "2026-10-31T07:36:06.000Z",
+   "vzMs": 4.61,
+   "phase": "ascent",
+   "altBandKm": 8,
+   "wind": {
+    "speedMs": 16.38,
+    "towardDeg": 26.7,
+    "fromDeg": 206.7,
+    "atAltM": 8700
+   }
+  },
+  {
+   "flightS": 1800,
+   "lat": 17.7883129,
+   "lon": 75.857666,
+   "altM": 8843,
+   "pressHpa": 337.3,
+   "tempC": -8.91,
+   "t": "2026-10-31T07:37:06.000Z",
+   "vzMs": 4.81,
+   "phase": "ascent",
+   "altBandKm": 8,
+   "wind": {
+    "speedMs": 18.76,
+    "towardDeg": 31.3,
+    "fromDeg": 211.3,
+    "atAltM": 8989
+   }
+  },
+  {
+   "flightS": 1860,
+   "lat": 17.7969608,
+   "lon": 75.8631897,
+   "altM": 9134,
+   "pressHpa": 324,
+   "tempC": -9.33,
+   "t": "2026-10-31T07:38:06.000Z",
+   "vzMs": 4.53,
+   "phase": "ascent",
+   "altBandKm": 9,
+   "wind": {
+    "speedMs": 19.28,
+    "towardDeg": 36.9,
+    "fromDeg": 216.9,
+    "atAltM": 9260
+   }
+  },
+  {
+   "flightS": 1920,
+   "lat": 17.8052788,
+   "lon": 75.869751,
+   "altM": 9386,
+   "pressHpa": 312.6,
+   "tempC": -8.41,
+   "t": "2026-10-31T07:39:06.000Z",
+   "vzMs": 4.08,
+   "phase": "ascent",
+   "altBandKm": 9,
+   "wind": {
+    "speedMs": 19.44,
+    "towardDeg": 41.9,
+    "fromDeg": 221.9,
+    "atAltM": 9505
+   }
+  },
+  {
+   "flightS": 1980,
+   "lat": 17.8130856,
+   "lon": 75.8771133,
+   "altM": 9624,
+   "pressHpa": 302.6,
+   "tempC": -10.21,
+   "t": "2026-10-31T07:40:06.000Z",
+   "vzMs": 4.19,
+   "phase": "ascent",
+   "altBandKm": 9,
+   "wind": {
+    "speedMs": 20.77,
+    "towardDeg": 47.7,
+    "fromDeg": 227.7,
+    "atAltM": 9757
+   }
+  },
+  {
+   "flightS": 2040,
+   "lat": 17.8206253,
+   "lon": 75.8858261,
+   "altM": 9889,
+   "pressHpa": 291.3,
+   "tempC": -12.72,
+   "t": "2026-10-31T07:41:06.000Z",
+   "vzMs": 4.02,
+   "phase": "ascent",
+   "altBandKm": 9,
+   "wind": {
+    "speedMs": 20.3,
+    "towardDeg": 48.8,
+    "fromDeg": 228.8,
+    "atAltM": 9998
+   }
+  },
+  {
+   "flightS": 2100,
+   "lat": 17.8278351,
+   "lon": 75.8944855,
+   "altM": 10106,
+   "pressHpa": 282.3,
+   "tempC": -13.25,
+   "t": "2026-10-31T07:42:06.000Z",
+   "vzMs": 3.9,
+   "phase": "ascent",
+   "altBandKm": 10,
+   "wind": {
+    "speedMs": 20.01,
+    "towardDeg": 49.4,
+    "fromDeg": 229.4,
+    "atAltM": 10232
+   }
+  },
+  {
+   "flightS": 2160,
+   "lat": 17.8348675,
+   "lon": 75.9030914,
+   "altM": 10357,
+   "pressHpa": 272.2,
+   "tempC": -20.96,
+   "t": "2026-10-31T07:43:06.000Z",
+   "vzMs": 4.42,
+   "phase": "ascent",
+   "altBandKm": 10,
+   "wind": {
+    "speedMs": 19.03,
+    "towardDeg": 37.9,
+    "fromDeg": 217.9,
+    "atAltM": 10497
+   }
+  },
+  {
+   "flightS": 2220,
+   "lat": 17.842968,
+   "lon": 75.9097214,
+   "altM": 10637,
+   "pressHpa": 261.6,
+   "tempC": -23.39,
+   "t": "2026-10-31T07:44:06.000Z",
+   "vzMs": 4.45,
+   "phase": "ascent",
+   "altBandKm": 10,
+   "wind": {
+    "speedMs": 21.31,
+    "towardDeg": 43,
+    "fromDeg": 223,
+    "atAltM": 10764
+   }
+  },
+  {
+   "flightS": 2280,
+   "lat": 17.8513832,
+   "lon": 75.9179535,
+   "altM": 10891,
+   "pressHpa": 251.6,
+   "tempC": -23.81,
+   "t": "2026-10-31T07:45:06.000Z",
+   "vzMs": 4.37,
+   "phase": "ascent",
+   "altBandKm": 10,
+   "wind": {
+    "speedMs": 22.98,
+    "towardDeg": 45.6,
+    "fromDeg": 225.6,
+    "atAltM": 11026
+   }
+  },
+  {
+   "flightS": 2340,
+   "lat": 17.8600655,
+   "lon": 75.9272537,
+   "altM": 11161,
+   "pressHpa": 241.9,
+   "tempC": -24.18,
+   "t": "2026-10-31T07:46:06.000Z",
+   "vzMs": 4.64,
+   "phase": "ascent",
+   "altBandKm": 11,
+   "wind": {
+    "speedMs": 22.72,
+    "towardDeg": 42.4,
+    "fromDeg": 222.4,
+    "atAltM": 11305
+   }
+  },
+  {
+   "flightS": 2400,
+   "lat": 17.8691196,
+   "lon": 75.935936,
+   "altM": 11448,
+   "pressHpa": 231.8,
+   "tempC": -22.08,
+   "t": "2026-10-31T07:47:06.000Z",
+   "vzMs": 5.02,
+   "phase": "ascent",
+   "altBandKm": 11,
+   "wind": {
+    "speedMs": 20.24,
+    "towardDeg": 30.3,
+    "fromDeg": 210.3,
+    "atAltM": 11606
+   }
+  },
+  {
+   "flightS": 2460,
+   "lat": 17.8785515,
+   "lon": 75.9417191,
+   "altM": 11763,
+   "pressHpa": 219.6,
+   "tempC": -28.26,
+   "t": "2026-10-31T07:48:06.000Z",
+   "vzMs": 5.06,
+   "phase": "ascent",
+   "altBandKm": 11,
+   "wind": {
+    "speedMs": 21.07,
+    "towardDeg": 32.7,
+    "fromDeg": 212.7,
+    "atAltM": 11909
+   }
+  },
+  {
+   "flightS": 2520,
+   "lat": 17.8881168,
+   "lon": 75.9481812,
+   "altM": 12055,
+   "pressHpa": 210.7,
+   "tempC": -30.52,
+   "t": "2026-10-31T07:49:06.000Z",
+   "vzMs": 4.89,
+   "phase": "ascent",
+   "altBandKm": 12,
+   "wind": {
+    "speedMs": 23.26,
+    "towardDeg": 26,
+    "fromDeg": 206,
+    "atAltM": 12203
+   }
+  },
+  {
+   "flightS": 2580,
+   "lat": 17.8993912,
+   "lon": 75.9539719,
+   "altM": 12350,
+   "pressHpa": 201,
+   "tempC": -30.93,
+   "t": "2026-10-31T07:50:06.000Z",
+   "vzMs": 4.42,
+   "phase": "ascent",
+   "altBandKm": 12,
+   "wind": {
+    "speedMs": 25.06,
+    "towardDeg": 18.3,
+    "fromDeg": 198.3,
+    "atAltM": 12468
+   }
+  },
+  {
+   "flightS": 2640,
+   "lat": 17.9122295,
+   "lon": 75.9584274,
+   "altM": 12585,
+   "pressHpa": 193.2,
+   "tempC": -30.42,
+   "t": "2026-10-31T07:51:06.000Z",
+   "vzMs": 4.17,
+   "phase": "ascent",
+   "altBandKm": 12,
+   "wind": {
+    "speedMs": 22.11,
+    "towardDeg": 33.4,
+    "fromDeg": 213.4,
+    "atAltM": 12718
+   }
+  },
+  {
+   "flightS": 2700,
+   "lat": 17.9221916,
+   "lon": 75.9653244,
+   "altM": 12851,
+   "pressHpa": 184.3,
+   "tempC": -36.28,
+   "t": "2026-10-31T07:52:06.000Z",
+   "vzMs": 4.74,
+   "phase": "ascent",
+   "altBandKm": 12,
+   "wind": {
+    "speedMs": 20.65,
+    "towardDeg": 49.3,
+    "fromDeg": 229.3,
+    "atAltM": 13003
+   }
+  },
+  {
+   "flightS": 2760,
+   "lat": 17.9294586,
+   "lon": 75.974205,
+   "altM": 13154,
+   "pressHpa": 175.3,
+   "tempC": -38.63,
+   "t": "2026-10-31T07:53:06.000Z",
+   "vzMs": 4.48,
+   "phase": "ascent",
+   "altBandKm": 13,
+   "wind": {
+    "speedMs": 21.81,
+    "towardDeg": 49.5,
+    "fromDeg": 229.5,
+    "atAltM": 13272
+   }
+  },
+  {
+   "flightS": 2820,
+   "lat": 17.9371033,
+   "lon": 75.9836121,
+   "altM": 13389,
+   "pressHpa": 168.7,
+   "tempC": -37.52,
+   "t": "2026-10-31T07:54:06.000Z",
+   "vzMs": 3.95,
+   "phase": "ascent",
+   "altBandKm": 13,
+   "wind": {
+    "speedMs": 20.92,
+    "towardDeg": 52.5,
+    "fromDeg": 232.5,
+    "atAltM": 13509
+   }
+  },
+  {
+   "flightS": 2880,
+   "lat": 17.9439754,
+   "lon": 75.9930267,
+   "altM": 13628,
+   "pressHpa": 162.6,
+   "tempC": -36.93,
+   "t": "2026-10-31T07:55:06.000Z",
+   "vzMs": 3.98,
+   "phase": "ascent",
+   "altBandKm": 13,
+   "wind": {
+    "speedMs": 19.21,
+    "towardDeg": 49.8,
+    "fromDeg": 229.8,
+    "atAltM": 13748
+   }
+  },
+  {
+   "flightS": 2940,
+   "lat": 17.9506683,
+   "lon": 76.0013504,
+   "altM": 13867,
+   "pressHpa": 156.4,
+   "tempC": -34,
+   "t": "2026-10-31T07:56:06.000Z",
+   "vzMs": 4.33,
+   "phase": "ascent",
+   "altBandKm": 13,
+   "wind": {
+    "speedMs": 14.76,
+    "towardDeg": 44.6,
+    "fromDeg": 224.6,
+    "atAltM": 14007
+   }
+  },
+  {
+   "flightS": 3000,
+   "lat": 17.9563389,
+   "lon": 76.0072327,
+   "altM": 14147,
+   "pressHpa": 149.8,
+   "tempC": -34.76,
+   "t": "2026-10-31T07:57:06.000Z",
+   "vzMs": 5.33,
+   "phase": "ascent",
+   "altBandKm": 14,
+   "wind": {
+    "speedMs": 13.54,
+    "towardDeg": 67.9,
+    "fromDeg": 247.9,
+    "atAltM": 14327
+   }
+  },
+  {
+   "flightS": 3060,
+   "lat": 17.9590855,
+   "lon": 76.0143509,
+   "altM": 14507,
+   "pressHpa": 139.4,
+   "tempC": -40.06,
+   "t": "2026-10-31T07:58:06.000Z",
+   "vzMs": 5.3,
+   "phase": "ascent",
+   "altBandKm": 14,
+   "wind": {
+    "speedMs": 13.1,
+    "towardDeg": 82.5,
+    "fromDeg": 262.5,
+    "atAltM": 14645
+   }
+  },
+  {
+   "flightS": 3120,
+   "lat": 17.9600029,
+   "lon": 76.0217209,
+   "altM": 14783,
+   "pressHpa": 132.6,
+   "tempC": -39.61,
+   "t": "2026-10-31T07:59:06.000Z",
+   "vzMs": 4.38,
+   "phase": "ascent",
+   "altBandKm": 14,
+   "wind": {
+    "speedMs": 13.92,
+    "towardDeg": 100.4,
+    "fromDeg": 280.4,
+    "atAltM": 14908
+   }
+  },
+  {
+   "flightS": 3180,
+   "lat": 17.958643,
+   "lon": 76.0294876,
+   "altM": 15032,
+   "pressHpa": 126.9,
+   "tempC": -39.06,
+   "t": "2026-10-31T08:00:06.000Z",
+   "vzMs": 4.02,
+   "phase": "ascent",
+   "altBandKm": 15,
+   "wind": {
+    "speedMs": 14.14,
+    "towardDeg": 106.7,
+    "fromDeg": 286.7,
+    "atAltM": 15149
+   }
+  },
+  {
+   "flightS": 3240,
+   "lat": 17.9564457,
+   "lon": 76.0371704,
+   "altM": 15265,
+   "pressHpa": 121.7,
+   "tempC": -39.05,
+   "t": "2026-10-31T08:01:06.000Z",
+   "vzMs": 4.85,
+   "phase": "ascent",
+   "altBandKm": 15,
+   "wind": {
+    "speedMs": 8.84,
+    "towardDeg": 95.3,
+    "fromDeg": 275.3,
+    "atAltM": 15440
+   }
+  },
+  {
+   "flightS": 3300,
+   "lat": 17.9560013,
+   "lon": 76.04216,
+   "altM": 15614,
+   "pressHpa": 114.6,
+   "tempC": -42.8,
+   "t": "2026-10-31T08:02:06.000Z",
+   "vzMs": 5.42,
+   "phase": "ascent",
+   "altBandKm": 15,
+   "wind": {
+    "speedMs": 6.68,
+    "towardDeg": 54.6,
+    "fromDeg": 234.6,
+    "atAltM": 15765
+   }
+  },
+  {
+   "flightS": 3360,
+   "lat": 17.9580879,
+   "lon": 76.0452499,
+   "altM": 15916,
+   "pressHpa": 107.5,
+   "tempC": -44.92,
+   "t": "2026-10-31T08:03:06.000Z",
+   "vzMs": 4.56,
+   "phase": "ascent",
+   "altBandKm": 15,
+   "wind": {
+    "speedMs": 8.05,
+    "towardDeg": 84,
+    "fromDeg": 264,
+    "atAltM": 16039
+   }
+  },
+  {
+   "flightS": 3420,
+   "lat": 17.9585438,
+   "lon": 76.0497894,
+   "altM": 16161,
+   "pressHpa": 103.2,
+   "tempC": -44.05,
+   "t": "2026-10-31T08:04:06.000Z",
+   "vzMs": 4.18,
+   "phase": "ascent",
+   "altBandKm": 16,
+   "wind": {
+    "speedMs": 7.3,
+    "towardDeg": 84,
+    "fromDeg": 264,
+    "atAltM": 16290
+   }
+  },
+  {
+   "flightS": 3480,
+   "lat": 17.9589558,
+   "lon": 76.0539093,
+   "altM": 16418,
+   "pressHpa": 98.6,
+   "tempC": -43.27,
+   "t": "2026-10-31T08:05:06.000Z",
+   "vzMs": 4.33,
+   "phase": "ascent",
+   "altBandKm": 16,
+   "wind": {
+    "speedMs": 5.4,
+    "towardDeg": 72,
+    "fromDeg": 252,
+    "atAltM": 16550
+   }
+  },
+  {
+   "flightS": 3540,
+   "lat": 17.9598541,
+   "lon": 76.0568237,
+   "altM": 16681,
+   "pressHpa": 94.2,
+   "tempC": -40.2,
+   "t": "2026-10-31T08:06:06.000Z",
+   "vzMs": 4.44,
+   "phase": "ascent",
+   "altBandKm": 16,
+   "wind": {
+    "speedMs": 6.85,
+    "towardDeg": 73.4,
+    "fromDeg": 253.4,
+    "atAltM": 16816
+   }
+  },
+  {
+   "flightS": 3600,
+   "lat": 17.9609127,
+   "lon": 76.0605469,
+   "altM": 16951,
+   "pressHpa": 89.6,
+   "tempC": -40.76,
+   "t": "2026-10-31T08:07:06.000Z",
+   "vzMs": 4.38,
+   "phase": "ascent",
+   "altBandKm": 16,
+   "wind": {
+    "speedMs": 5.28,
+    "towardDeg": 87.7,
+    "fromDeg": 267.7,
+    "atAltM": 17079
+   }
+  },
+  {
+   "flightS": 3660,
+   "lat": 17.9610252,
+   "lon": 76.0635376,
+   "altM": 17206,
+   "pressHpa": 85.1,
+   "tempC": -40.45,
+   "t": "2026-10-31T08:08:06.000Z",
+   "vzMs": 4.28,
+   "phase": "ascent",
+   "altBandKm": 17,
+   "wind": {
+    "speedMs": 4.69,
+    "towardDeg": 43.5,
+    "fromDeg": 223.5,
+    "atAltM": 17336
+   }
+  },
+  {
+   "flightS": 3720,
+   "lat": 17.9628582,
+   "lon": 76.0653687,
+   "altM": 17465,
+   "pressHpa": 81.2,
+   "tempC": -40.95,
+   "t": "2026-10-31T08:09:06.000Z",
+   "vzMs": 4.21,
+   "phase": "ascent",
+   "altBandKm": 17,
+   "wind": {
+    "speedMs": 7.22,
+    "towardDeg": 31.3,
+    "fromDeg": 211.3,
+    "atAltM": 17588
+   }
+  },
+  {
+   "flightS": 3780,
+   "lat": 17.9661884,
+   "lon": 76.0674973,
+   "altM": 17711,
+   "pressHpa": 78,
+   "tempC": -37.73,
+   "t": "2026-10-31T08:10:06.000Z",
+   "vzMs": 4.17,
+   "phase": "ascent",
+   "altBandKm": 17,
+   "wind": {
+    "speedMs": 5.77,
+    "towardDeg": 30.4,
+    "fromDeg": 210.4,
+    "atAltM": 17838
+   }
+  },
+  {
+   "flightS": 3840,
+   "lat": 17.968874,
+   "lon": 76.0691528,
+   "altM": 17965,
+   "pressHpa": 74.7,
+   "tempC": -36.82,
+   "t": "2026-10-31T08:11:06.000Z",
+   "vzMs": 4.32,
+   "phase": "ascent",
+   "altBandKm": 17,
+   "wind": {
+    "speedMs": 1.29,
+    "towardDeg": 19.5,
+    "fromDeg": 199.5,
+    "atAltM": 18097
+   }
+  },
+  {
+   "flightS": 3900,
+   "lat": 17.9695301,
+   "lon": 76.069397,
+   "altM": 18229,
+   "pressHpa": 71.6,
+   "tempC": -34.62,
+   "t": "2026-10-31T08:12:06.000Z",
+   "vzMs": 4.46,
+   "phase": "ascent",
+   "altBandKm": 18,
+   "wind": {
+    "speedMs": 5.32,
+    "towardDeg": 114.1,
+    "fromDeg": 294.1,
+    "atAltM": 18365
+   }
+  },
+  {
+   "flightS": 3960,
+   "lat": 17.968359,
+   "lon": 76.0721512,
+   "altM": 18500,
+   "pressHpa": 67.6,
+   "tempC": -35.47,
+   "t": "2026-10-31T08:13:06.000Z",
+   "vzMs": 4.4,
+   "phase": "ascent",
+   "altBandKm": 18,
+   "wind": {
+    "speedMs": 3.84,
+    "towardDeg": 110.6,
+    "fromDeg": 290.6,
+    "atAltM": 18629
+   }
+  },
+  {
+   "flightS": 4020,
+   "lat": 17.9676304,
+   "lon": 76.0741882,
+   "altM": 18757,
+   "pressHpa": 64.8,
+   "tempC": -33.81,
+   "t": "2026-10-31T08:14:06.000Z",
+   "vzMs": 4.33,
+   "phase": "ascent",
+   "altBandKm": 18,
+   "wind": {
+    "speedMs": 4.94,
+    "towardDeg": 170,
+    "fromDeg": 350,
+    "atAltM": 18889
+   }
+  },
+  {
+   "flightS": 4080,
+   "lat": 17.965004,
+   "lon": 76.0746765,
+   "altM": 19020,
+   "pressHpa": 62.1,
+   "tempC": -31.29,
+   "t": "2026-10-31T08:15:06.000Z",
+   "vzMs": 4.42,
+   "phase": "ascent",
+   "altBandKm": 19,
+   "wind": {
+    "speedMs": 4.38,
+    "towardDeg": 166.1,
+    "fromDeg": 346.1,
+    "atAltM": 19154
+   }
+  },
+  {
+   "flightS": 4140,
+   "lat": 17.9627094,
+   "lon": 76.0752716,
+   "altM": 19288,
+   "pressHpa": 59.5,
+   "tempC": -29.07,
+   "t": "2026-10-31T08:16:06.000Z",
+   "vzMs": 4.47,
+   "phase": "ascent",
+   "altBandKm": 19,
+   "wind": {
+    "speedMs": 6.57,
+    "towardDeg": 186.3,
+    "fromDeg": 6.3,
+    "atAltM": 19423
+   }
+  },
+  {
+   "flightS": 4200,
+   "lat": 17.9591866,
+   "lon": 76.0748596,
+   "altM": 19557,
+   "pressHpa": 56.4,
+   "tempC": -26.37,
+   "t": "2026-10-31T08:17:06.000Z",
+   "vzMs": 0.07,
+   "phase": "ascent",
+   "altBandKm": 19,
+   "wind": {
+    "speedMs": 5.97,
+    "towardDeg": 202.1,
+    "fromDeg": 22.1,
+    "atAltM": 19427
+   }
+  },
+  {
+   "flightS": 4260,
+   "lat": 17.9562035,
+   "lon": 76.0735855,
+   "altM": 19296,
+   "pressHpa": 59.2,
+   "tempC": -30.57,
+   "t": "2026-10-31T08:18:06.000Z",
+   "vzMs": -8.07,
+   "phase": "descent",
+   "altBandKm": 19,
+   "wind": {
+    "speedMs": 3.95,
+    "towardDeg": 149.1,
+    "fromDeg": 329.1,
+    "atAltM": 18943
+   }
+  },
+  {
+   "flightS": 4320,
+   "lat": 17.9543724,
+   "lon": 76.0747375,
+   "altM": 18589,
+   "pressHpa": 65.6,
+   "tempC": -44.67,
+   "t": "2026-10-31T08:19:06.000Z",
+   "vzMs": -11.66,
+   "phase": "descent",
+   "altBandKm": 18,
+   "wind": {
+    "speedMs": 2.69,
+    "towardDeg": 108.3,
+    "fromDeg": 288.3,
+    "atAltM": 18243
+   }
+  },
+  {
+   "flightS": 4380,
+   "lat": 17.9539165,
+   "lon": 76.0761871,
+   "altM": 17897,
+   "pressHpa": 73.5,
+   "tempC": -49.61,
+   "t": "2026-10-31T08:20:06.000Z",
+   "vzMs": -11.25,
+   "phase": "descent",
+   "altBandKm": 17,
+   "wind": {
+    "speedMs": 5.96,
+    "towardDeg": 31.1,
+    "fromDeg": 211.1,
+    "atAltM": 17568
+   }
+  },
+  {
+   "flightS": 4440,
+   "lat": 17.9566689,
+   "lon": 76.0779343,
+   "altM": 17239,
+   "pressHpa": 82.5,
+   "tempC": -51.34,
+   "t": "2026-10-31T08:21:06.000Z",
+   "vzMs": -9.66,
+   "phase": "descent",
+   "altBandKm": 17,
+   "wind": {
+    "speedMs": 7.08,
+    "towardDeg": 67.1,
+    "fromDeg": 247.1,
+    "atAltM": 16989
+   }
+  },
+  {
+   "flightS": 4500,
+   "lat": 17.9581528,
+   "lon": 76.0816345,
+   "altM": 16738,
+   "pressHpa": 91.2,
+   "tempC": -51.96,
+   "t": "2026-10-31T08:22:06.000Z",
+   "vzMs": -8.34,
+   "phase": "descent",
+   "altBandKm": 16,
+   "wind": {
+    "speedMs": 6.15,
+    "towardDeg": 71.3,
+    "fromDeg": 251.3,
+    "atAltM": 16488
+   }
+  },
+  {
+   "flightS": 4560,
+   "lat": 17.959219,
+   "lon": 76.084938,
+   "altM": 16238,
+   "pressHpa": 100.2,
+   "tempC": -54.72,
+   "t": "2026-10-31T08:23:06.000Z",
+   "vzMs": -8.22,
+   "phase": "descent",
+   "altBandKm": 16,
+   "wind": {
+    "speedMs": 7.07,
+    "towardDeg": 67.3,
+    "fromDeg": 247.3,
+    "atAltM": 15995
+   }
+  },
+  {
+   "flightS": 4620,
+   "lat": 17.9606934,
+   "lon": 76.0886383,
+   "altM": 15751,
+   "pressHpa": 109.5,
+   "tempC": -53.15,
+   "t": "2026-10-31T08:24:06.000Z",
+   "vzMs": -8.07,
+   "phase": "descent",
+   "altBandKm": 15,
+   "wind": {
+    "speedMs": 7.86,
+    "towardDeg": 88.9,
+    "fromDeg": 268.9,
+    "atAltM": 15511
+   }
+  },
+  {
+   "flightS": 4680,
+   "lat": 17.9607754,
+   "lon": 76.0930939,
+   "altM": 15270,
+   "pressHpa": 120.2,
+   "tempC": -50.75,
+   "t": "2026-10-31T08:25:06.000Z",
+   "vzMs": -7.63,
+   "phase": "descent",
+   "altBandKm": 15,
+   "wind": {
+    "speedMs": 12.8,
+    "towardDeg": 105,
+    "fromDeg": 285,
+    "atAltM": 15053
+   }
+  },
+  {
+   "flightS": 4740,
+   "lat": 17.9589825,
+   "lon": 76.1001053,
+   "altM": 14836,
+   "pressHpa": 129.9,
+   "tempC": -49.41,
+   "t": "2026-10-31T08:26:06.000Z",
+   "vzMs": -7.39,
+   "phase": "descent",
+   "altBandKm": 14,
+   "wind": {
+    "speedMs": 11.93,
+    "towardDeg": 81.1,
+    "fromDeg": 261.1,
+    "atAltM": 14610
+   }
+  },
+  {
+   "flightS": 4800,
+   "lat": 17.9599819,
+   "lon": 76.1067886,
+   "altM": 14383,
+   "pressHpa": 140.3,
+   "tempC": -49.88,
+   "t": "2026-10-31T08:27:06.000Z",
+   "vzMs": -7.58,
+   "phase": "descent",
+   "altBandKm": 14,
+   "wind": {
+    "speedMs": 13.28,
+    "towardDeg": 51.5,
+    "fromDeg": 231.5,
+    "atAltM": 14155
+   }
+  },
+  {
+   "flightS": 4860,
+   "lat": 17.9644413,
+   "lon": 76.1126862,
+   "altM": 13927,
+   "pressHpa": 152.1,
+   "tempC": -49.01,
+   "t": "2026-10-31T08:28:06.000Z",
+   "vzMs": -7.24,
+   "phase": "descent",
+   "altBandKm": 13,
+   "wind": {
+    "speedMs": 20.05,
+    "towardDeg": 51.9,
+    "fromDeg": 231.9,
+    "atAltM": 13721
+   }
+  },
+  {
+   "flightS": 4920,
+   "lat": 17.9711113,
+   "lon": 76.1216431,
+   "altM": 13514,
+   "pressHpa": 161.9,
+   "tempC": -46.31,
+   "t": "2026-10-31T08:29:06.000Z",
+   "vzMs": -7.09,
+   "phase": "descent",
+   "altBandKm": 13,
+   "wind": {
+    "speedMs": 21.12,
+    "towardDeg": 51.3,
+    "fromDeg": 231.3,
+    "atAltM": 13295
+   }
+  },
+  {
+   "flightS": 4980,
+   "lat": 17.9782333,
+   "lon": 76.1309967,
+   "altM": 13076,
+   "pressHpa": 176.9,
+   "tempC": -43.79,
+   "t": "2026-10-31T08:30:06.000Z",
+   "vzMs": -7.15,
+   "phase": "descent",
+   "altBandKm": 13,
+   "wind": {
+    "speedMs": 20.55,
+    "towardDeg": 39.2,
+    "fromDeg": 219.2,
+    "atAltM": 12866
+   }
+  },
+  {
+   "flightS": 5040,
+   "lat": 17.9868221,
+   "lon": 76.1383667,
+   "altM": 12656,
+   "pressHpa": 190.1,
+   "tempC": -40.23,
+   "t": "2026-10-31T08:31:06.000Z",
+   "vzMs": -7.14,
+   "phase": "descent",
+   "altBandKm": 12,
+   "wind": {
+    "speedMs": 23.84,
+    "towardDeg": 20,
+    "fromDeg": 200,
+    "atAltM": 12438
+   }
+  },
+  {
+   "flightS": 5100,
+   "lat": 17.9989128,
+   "lon": 76.1429901,
+   "altM": 12219,
+   "pressHpa": 202.6,
+   "tempC": -39.45,
+   "t": "2026-10-31T08:32:06.000Z",
+   "vzMs": -7,
+   "phase": "descent",
+   "altBandKm": 12,
+   "wind": {
+    "speedMs": 21.38,
+    "towardDeg": 29.3,
+    "fromDeg": 209.3,
+    "atAltM": 12018
+   }
+  },
+  {
+   "flightS": 5160,
+   "lat": 18.0089684,
+   "lon": 76.1489334,
+   "altM": 11816,
+   "pressHpa": 217.5,
+   "tempC": -37.87,
+   "t": "2026-10-31T08:33:06.000Z",
+   "vzMs": -7.15,
+   "phase": "descent",
+   "altBandKm": 11,
+   "wind": {
+    "speedMs": 20.38,
+    "towardDeg": 35.6,
+    "fromDeg": 215.6,
+    "atAltM": 11589
+   }
+  },
+  {
+   "flightS": 5220,
+   "lat": 18.01791,
+   "lon": 76.1556625,
+   "altM": 11361,
+   "pressHpa": 233.4,
+   "tempC": -38.05,
+   "t": "2026-10-31T08:34:06.000Z",
+   "vzMs": -7.28,
+   "phase": "descent",
+   "altBandKm": 11,
+   "wind": {
+    "speedMs": 22.43,
+    "towardDeg": 42.2,
+    "fromDeg": 222.2,
+    "atAltM": 11152
+   }
+  },
+  {
+   "flightS": 5280,
+   "lat": 18.0268745,
+   "lon": 76.1642151,
+   "altM": 10942,
+   "pressHpa": 249.9,
+   "tempC": -33.78,
+   "t": "2026-10-31T08:35:06.000Z",
+   "vzMs": -6.75,
+   "phase": "descent",
+   "altBandKm": 10,
+   "wind": {
+    "speedMs": 21.49,
+    "towardDeg": 44.5,
+    "fromDeg": 224.5,
+    "atAltM": 10747
+   }
+  },
+  {
+   "flightS": 5340,
+   "lat": 18.0351505,
+   "lon": 76.17276,
+   "altM": 10551,
+   "pressHpa": 264.7,
+   "tempC": -29.09,
+   "t": "2026-10-31T08:36:06.000Z",
+   "vzMs": -6.4,
+   "phase": "descent",
+   "altBandKm": 10,
+   "wind": {
+    "speedMs": 19.35,
+    "towardDeg": 42.4,
+    "fromDeg": 222.4,
+    "atAltM": 10363
+   }
+  },
+  {
+   "flightS": 5400,
+   "lat": 18.04286,
+   "lon": 76.1801682,
+   "altM": 10174,
+   "pressHpa": 280.6,
+   "tempC": -26.78,
+   "t": "2026-10-31T08:37:06.000Z",
+   "vzMs": -6.36,
+   "phase": "descent",
+   "altBandKm": 10,
+   "wind": {
+    "speedMs": 19.93,
+    "towardDeg": 50.8,
+    "fromDeg": 230.8,
+    "atAltM": 9981
+   }
+  },
+  {
+   "flightS": 5460,
+   "lat": 18.0496578,
+   "lon": 76.1889343,
+   "altM": 9788,
+   "pressHpa": 292.8,
+   "tempC": -25.49,
+   "t": "2026-10-31T08:38:06.000Z",
+   "vzMs": -6.63,
+   "phase": "descent",
+   "altBandKm": 9,
+   "wind": {
+    "speedMs": 19.05,
+    "towardDeg": 47.6,
+    "fromDeg": 227.6,
+    "atAltM": 9584
+   }
+  },
+  {
+   "flightS": 5520,
+   "lat": 18.0565834,
+   "lon": 76.1969223,
+   "altM": 9379,
+   "pressHpa": 314,
+   "tempC": -21.74,
+   "t": "2026-10-31T08:39:06.000Z",
+   "vzMs": -6.88,
+   "phase": "descent",
+   "altBandKm": 9,
+   "wind": {
+    "speedMs": 19.75,
+    "towardDeg": 38.6,
+    "fromDeg": 218.6,
+    "atAltM": 9171
+   }
+  },
+  {
+   "flightS": 5580,
+   "lat": 18.0649166,
+   "lon": 76.2039108,
+   "altM": 8963,
+   "pressHpa": 332.6,
+   "tempC": -20.56,
+   "t": "2026-10-31T08:40:06.000Z",
+   "vzMs": -6.97,
+   "phase": "descent",
+   "altBandKm": 8,
+   "wind": {
+    "speedMs": 18.11,
+    "towardDeg": 30.5,
+    "fromDeg": 210.5,
+    "atAltM": 8753
+   }
+  },
+  {
+   "flightS": 5640,
+   "lat": 18.0733395,
+   "lon": 76.2091217,
+   "altM": 8542,
+   "pressHpa": 352.7,
+   "tempC": -17.49,
+   "t": "2026-10-31T08:41:06.000Z",
+   "vzMs": -6.43,
+   "phase": "descent",
+   "altBandKm": 8,
+   "wind": {
+    "speedMs": 14.63,
+    "towardDeg": 30.2,
+    "fromDeg": 210.2,
+    "atAltM": 8367
+   }
+  },
+  {
+   "flightS": 5700,
+   "lat": 18.080162,
+   "lon": 76.213295,
+   "altM": 8191,
+   "pressHpa": 369.9,
+   "tempC": -15.84,
+   "t": "2026-10-31T08:42:06.000Z",
+   "vzMs": -5.73,
+   "phase": "descent",
+   "altBandKm": 8,
+   "wind": {
+    "speedMs": 13.35,
+    "towardDeg": 34.8,
+    "fromDeg": 214.8,
+    "atAltM": 8023
+   }
+  },
+  {
+   "flightS": 5760,
+   "lat": 18.0860767,
+   "lon": 76.2176208,
+   "altM": 7854,
+   "pressHpa": 386.8,
+   "tempC": -14.04,
+   "t": "2026-10-31T08:43:06.000Z",
+   "vzMs": -5.47,
+   "phase": "descent",
+   "altBandKm": 7,
+   "wind": {
+    "speedMs": 11.89,
+    "towardDeg": 31,
+    "fromDeg": 211,
+    "atAltM": 7694
+   }
+  },
+  {
+   "flightS": 5820,
+   "lat": 18.0915775,
+   "lon": 76.2210999,
+   "altM": 7534,
+   "pressHpa": 403.8,
+   "tempC": -11.4,
+   "t": "2026-10-31T08:44:06.000Z",
+   "vzMs": -5.3,
+   "phase": "descent",
+   "altBandKm": 7,
+   "wind": {
+    "speedMs": 10.97,
+    "towardDeg": 19.5,
+    "fromDeg": 199.5,
+    "atAltM": 7376
+   }
+  },
+  {
+   "flightS": 5880,
+   "lat": 18.0971603,
+   "lon": 76.223175,
+   "altM": 7218,
+   "pressHpa": 421.4,
+   "tempC": -9.47,
+   "t": "2026-10-31T08:45:06.000Z",
+   "vzMs": -5.27,
+   "phase": "descent",
+   "altBandKm": 7,
+   "wind": {
+    "speedMs": 10.98,
+    "towardDeg": 13.5,
+    "fromDeg": 193.5,
+    "atAltM": 7060
+   }
+  },
+  {
+   "flightS": 5940,
+   "lat": 18.1029205,
+   "lon": 76.2246246,
+   "altM": 6902,
+   "pressHpa": 439,
+   "tempC": -7.54,
+   "t": "2026-10-31T08:46:06.000Z",
+   "vzMs": -5.53,
+   "phase": "descent",
+   "altBandKm": 6,
+   "wind": {
+    "speedMs": 11.27,
+    "towardDeg": 13.4,
+    "fromDeg": 193.4,
+    "atAltM": 6728
+   }
+  },
+  {
+   "flightS": 6000,
+   "lat": 18.1088352,
+   "lon": 76.2261124,
+   "altM": 6554,
+   "pressHpa": 460.4,
+   "tempC": -5.08,
+   "t": "2026-10-31T08:47:06.000Z",
+   "vzMs": -5.85,
+   "phase": "descent",
+   "altBandKm": 6,
+   "wind": {
+    "speedMs": 9.11,
+    "towardDeg": 27,
+    "fromDeg": 207,
+    "atAltM": 6377
+   }
+  },
+  {
+   "flightS": 6060,
+   "lat": 18.1132145,
+   "lon": 76.2284622,
+   "altM": 6200,
+   "pressHpa": 480.7,
+   "tempC": -3.18,
+   "t": "2026-10-31T08:48:06.000Z",
+   "vzMs": -5.33,
+   "phase": "descent",
+   "altBandKm": 6,
+   "wind": {
+    "speedMs": 7.43,
+    "towardDeg": 52.9,
+    "fromDeg": 232.9,
+    "atAltM": 6057
+   }
+  },
+  {
+   "flightS": 6120,
+   "lat": 18.115633,
+   "lon": 76.2318268,
+   "altM": 5914,
+   "pressHpa": 497.9,
+   "tempC": -0.61,
+   "t": "2026-10-31T08:49:06.000Z",
+   "vzMs": -4.54,
+   "phase": "descent",
+   "altBandKm": 5,
+   "wind": {
+    "speedMs": 6.89,
+    "towardDeg": 50.1,
+    "fromDeg": 230.1,
+    "atAltM": 5785
+   }
+  },
+  {
+   "flightS": 6180,
+   "lat": 18.1180191,
+   "lon": 76.2348251,
+   "altM": 5655,
+   "pressHpa": 515.7,
+   "tempC": 1.62,
+   "t": "2026-10-31T08:50:06.000Z",
+   "vzMs": -4.48,
+   "phase": "descent",
+   "altBandKm": 5,
+   "wind": {
+    "speedMs": 7.37,
+    "towardDeg": 46.2,
+    "fromDeg": 226.2,
+    "atAltM": 5516
+   }
+  },
+  {
+   "flightS": 6240,
+   "lat": 18.1207714,
+   "lon": 76.2378464,
+   "altM": 5376,
+   "pressHpa": 535.7,
+   "tempC": 3.68,
+   "t": "2026-10-31T08:51:06.000Z",
+   "vzMs": -5.29,
+   "phase": "descent",
+   "altBandKm": 5,
+   "wind": {
+    "speedMs": 6.36,
+    "towardDeg": 36,
+    "fromDeg": 216,
+    "atAltM": 5198
+   }
+  },
+  {
+   "flightS": 6300,
+   "lat": 18.1235504,
+   "lon": 76.2399673,
+   "altM": 5020,
+   "pressHpa": 559.3,
+   "tempC": 5.23,
+   "t": "2026-10-31T08:52:06.000Z",
+   "vzMs": -6.17,
+   "phase": "descent",
+   "altBandKm": 5,
+   "wind": {
+    "speedMs": 6.81,
+    "towardDeg": 43.2,
+    "fromDeg": 223.2,
+    "atAltM": 4828
+   }
+  },
+  {
+   "flightS": 6360,
+   "lat": 18.1262321,
+   "lon": 76.2426147,
+   "altM": 4635,
+   "pressHpa": 587,
+   "tempC": 6.54,
+   "t": "2026-10-31T08:53:06.000Z",
+   "vzMs": -5.74,
+   "phase": "descent",
+   "altBandKm": 4,
+   "wind": {
+    "speedMs": 5.19,
+    "towardDeg": 36.8,
+    "fromDeg": 216.8,
+    "atAltM": 4483
+   }
+  },
+  {
+   "flightS": 6420,
+   "lat": 18.1284733,
+   "lon": 76.2443771,
+   "altM": 4331,
+   "pressHpa": 610.2,
+   "tempC": 8.29,
+   "t": "2026-10-31T08:54:06.000Z",
+   "vzMs": -4.48,
+   "phase": "descent",
+   "altBandKm": 4,
+   "wind": {
+    "speedMs": 4.95,
+    "towardDeg": 17.7,
+    "fromDeg": 197.7,
+    "atAltM": 4214
+   }
+  },
+  {
+   "flightS": 6480,
+   "lat": 18.1310158,
+   "lon": 76.2452316,
+   "altM": 4097,
+   "pressHpa": 627.2,
+   "tempC": 10.14,
+   "t": "2026-10-31T08:55:06.000Z",
+   "vzMs": -3.57,
+   "phase": "descent",
+   "altBandKm": 4,
+   "wind": {
+    "speedMs": 5.59,
+    "towardDeg": 13.8,
+    "fromDeg": 193.8,
+    "atAltM": 4000
+   }
+  },
+  {
+   "flightS": 6540,
+   "lat": 18.1339474,
+   "lon": 76.2459869,
+   "altM": 3903,
+   "pressHpa": 641.4,
+   "tempC": 10.56,
+   "t": "2026-10-31T08:56:06.000Z",
+   "vzMs": -3.38,
+   "phase": "descent",
+   "altBandKm": 3,
+   "wind": {
+    "speedMs": 5.14,
+    "towardDeg": 19.7,
+    "fromDeg": 199.7,
+    "atAltM": 3797
+   }
+  },
+  {
+   "flightS": 6600,
+   "lat": 18.1365585,
+   "lon": 76.2469711,
+   "altM": 3691,
+   "pressHpa": 655.5,
+   "tempC": 10.76,
+   "t": "2026-10-31T08:57:06.000Z",
+   "vzMs": -3.58,
+   "phase": "descent",
+   "altBandKm": 3,
+   "wind": {
+    "speedMs": 4.9,
+    "towardDeg": 12.4,
+    "fromDeg": 192.4,
+    "atAltM": 3583
+   }
+  },
+  {
+   "flightS": 6660,
+   "lat": 18.1391411,
+   "lon": 76.2475662,
+   "altM": 3474,
+   "pressHpa": 676.2,
+   "tempC": 11.97,
+   "t": "2026-10-31T08:58:06.000Z",
+   "vzMs": -3.65,
+   "phase": "descent",
+   "altBandKm": 3,
+   "wind": {
+    "speedMs": 4.01,
+    "towardDeg": 3.3,
+    "fromDeg": 183.3,
+    "atAltM": 3364
+   }
+  },
+  {
+   "flightS": 6720,
+   "lat": 18.1413002,
+   "lon": 76.2476959,
+   "altM": 3253,
+   "pressHpa": 694.3,
+   "tempC": 13.47,
+   "t": "2026-10-31T08:59:06.000Z",
+   "vzMs": -3.74,
+   "phase": "descent",
+   "altBandKm": 3,
+   "wind": {
+    "speedMs": 2.1,
+    "towardDeg": 2.2,
+    "fromDeg": 182.2,
+    "atAltM": 3139
+   }
+  },
+  {
+   "flightS": 6780,
+   "lat": 18.1424313,
+   "lon": 76.2477417,
+   "altM": 3025,
+   "pressHpa": 709,
+   "tempC": 14.47,
+   "t": "2026-10-31T09:00:06.000Z",
+   "vzMs": -3.71,
+   "phase": "descent",
+   "altBandKm": 3,
+   "wind": {
+    "speedMs": 1.4,
+    "towardDeg": 300.4,
+    "fromDeg": 120.4,
+    "atAltM": 2917
+   }
+  },
+  {
+   "flightS": 6840,
+   "lat": 18.1428146,
+   "lon": 76.2470551,
+   "altM": 2808,
+   "pressHpa": 731.9,
+   "tempC": 16.43,
+   "t": "2026-10-31T09:01:06.000Z",
+   "vzMs": -3.62,
+   "phase": "descent",
+   "altBandKm": 2,
+   "wind": {
+    "speedMs": 2.72,
+    "towardDeg": 290.8,
+    "fromDeg": 110.8,
+    "atAltM": 2700
+   }
+  },
+  {
+   "flightS": 6900,
+   "lat": 18.1433353,
+   "lon": 76.2456131,
+   "altM": 2591,
+   "pressHpa": 752,
+   "tempC": 18.97,
+   "t": "2026-10-31T09:02:06.000Z",
+   "vzMs": -3.33,
+   "phase": "descent",
+   "altBandKm": 2,
+   "wind": {
+    "speedMs": 1.37,
+    "towardDeg": 283.3,
+    "fromDeg": 103.3,
+    "atAltM": 2500
+   }
+  },
+  {
+   "flightS": 6960,
+   "lat": 18.1435051,
+   "lon": 76.2448578,
+   "altM": 2408,
+   "pressHpa": 764.2,
+   "tempC": 19.51,
+   "t": "2026-10-31T09:03:06.000Z",
+   "vzMs": -3.23,
+   "phase": "descent",
+   "altBandKm": 2,
+   "wind": {
+    "speedMs": 0.93,
+    "towardDeg": 186.7,
+    "fromDeg": 6.7,
+    "atAltM": 2306
+   }
+  },
+  {
+   "flightS": 7020,
+   "lat": 18.1430092,
+   "lon": 76.2447968,
+   "altM": 2203,
+   "pressHpa": 786.7,
+   "tempC": 18.19,
+   "t": "2026-10-31T09:04:06.000Z",
+   "vzMs": -3.54,
+   "phase": "descent",
+   "altBandKm": 2,
+   "wind": {
+    "speedMs": 1.66,
+    "towardDeg": 253.1,
+    "fromDeg": 73.1,
+    "atAltM": 2093
+   }
+  },
+  {
+   "flightS": 7080,
+   "lat": 18.1427498,
+   "lon": 76.2438965,
+   "altM": 1983,
+   "pressHpa": 807.6,
+   "tempC": 19.03,
+   "t": "2026-10-31T09:05:06.000Z",
+   "vzMs": -3.31,
+   "phase": "descent",
+   "altBandKm": 1,
+   "wind": {
+    "speedMs": 5.86,
+    "towardDeg": 224.9,
+    "fromDeg": 44.9,
+    "atAltM": 1895
+   }
+  },
+  {
+   "flightS": 7140,
+   "lat": 18.1405106,
+   "lon": 76.2415466,
+   "altM": 1806,
+   "pressHpa": 824.7,
+   "tempC": 20.35,
+   "t": "2026-10-31T09:06:06.000Z",
+   "vzMs": -3.01,
+   "phase": "descent",
+   "altBandKm": 1,
+   "wind": {
+    "speedMs": 5.76,
+    "towardDeg": 227.3,
+    "fromDeg": 47.3,
+    "atAltM": 1714
+   }
+  },
+  {
+   "flightS": 7200,
+   "lat": 18.138401,
+   "lon": 76.2391434,
+   "altM": 1622,
+   "pressHpa": 841,
+   "tempC": 22.44,
+   "t": "2026-10-31T09:07:06.000Z",
+   "vzMs": -2.84,
+   "phase": "descent",
+   "altBandKm": 1,
+   "wind": {
+    "speedMs": 5.79,
+    "towardDeg": 234.6,
+    "fromDeg": 54.6,
+    "atAltM": 1544
+   }
+  },
+  {
+   "flightS": 7260,
+   "lat": 18.136591,
+   "lon": 76.2364655,
+   "altM": 1465,
+   "pressHpa": 856.9,
+   "tempC": 24.01,
+   "t": "2026-10-31T09:08:06.000Z",
+   "vzMs": -2.98,
+   "phase": "descent",
+   "altBandKm": 1,
+   "wind": {
+    "speedMs": 6.34,
+    "towardDeg": 234.2,
+    "fromDeg": 54.2,
+    "atAltM": 1365
+   }
+  },
+  {
+   "flightS": 7320,
+   "lat": 18.1345901,
+   "lon": 76.2335434,
+   "altM": 1264,
+   "pressHpa": 875.8,
+   "tempC": 25.24,
+   "t": "2026-10-31T09:09:06.000Z",
+   "vzMs": -3.74,
+   "phase": "descent",
+   "altBandKm": 1,
+   "wind": {
+    "speedMs": 5.98,
+    "towardDeg": 245.3,
+    "fromDeg": 65.3,
+    "atAltM": 1140
+   }
+  },
+  {
+   "flightS": 7380,
+   "lat": 18.1332397,
+   "lon": 76.2304611,
+   "altM": 1016,
+   "pressHpa": 899.3,
+   "tempC": 27.89,
+   "t": "2026-10-31T09:10:06.000Z",
+   "vzMs": -4.3,
+   "phase": "descent",
+   "altBandKm": 1,
+   "wind": {
+    "speedMs": 4.03,
+    "towardDeg": 245.9,
+    "fromDeg": 65.9,
+    "atAltM": 882
+   }
+  },
+  {
+   "flightS": 7440,
+   "lat": 18.1323509,
+   "lon": 76.2283707,
+   "altM": 748,
+   "pressHpa": 930.6,
+   "tempC": 29.19,
+   "t": "2026-10-31T09:11:06.000Z",
+   "vzMs": -3.32,
+   "phase": "descent",
+   "altBandKm": 0,
+   "wind": {
+    "speedMs": 2.87,
+    "towardDeg": 273.7,
+    "fromDeg": 93.7,
+    "atAltM": 683
+   }
+  },
+  {
+   "flightS": 7500,
+   "lat": 18.1324501,
+   "lon": 76.2267456,
+   "altM": 618,
+   "pressHpa": 940.3,
+   "tempC": 34.09,
+   "t": "2026-10-31T09:12:06.000Z",
+   "vzMs": -2.17,
+   "phase": "descent",
+   "altBandKm": 0,
+   "wind": null
+  }
+ ]
+}
