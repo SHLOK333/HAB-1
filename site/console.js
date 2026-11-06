@@ -478,6 +478,7 @@ function renderOps() {
     b.setAttribute("aria-busy", S.busy === name)
   }
   $("op-alt").disabled = !live
+  if ($("op-atk-when")) $("op-atk-when").disabled = $("op-attack").disabled
   $("ops-note").textContent = S.busy ? `running ${S.busy}…` : ""
   // Say why a light is red or yellow, and what fixes it.
   const h = S.health, probs = !live || !h ? [] : [
@@ -490,7 +491,7 @@ function renderOps() {
       : "Operations run on the ground station laptop: node station/server.mjs, then open http://localhost:8090.")
 }
 for (const [id, name] of Object.entries(OPS)) $(id).onclick = async () => {
-  const r = await fetch(`/api/cmd/${name}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ alt: Number($("op-alt").value) }) }).then(r => r.json()).catch(e => ({ ok: false, error: e.message }))
+  const r = await fetch(`/api/cmd/${name}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ alt: Number($("op-alt").value), when: $("op-atk-when")?.value }) }).then(r => r.json()).catch(e => ({ ok: false, error: e.message }))
   if (!r.ok) log("ops", `<span class="bad">${esc(r.error)}</span>`)
 }
 
@@ -951,7 +952,7 @@ function prCue() {
   if (!live || !f?.heardAt) { el.innerHTML = ""; return }
   const k = f.seq % BATCH_N, age = (Date.now() - f.heardAt) / 1000
   if (k === 4 && age < 11) el.innerHTML = `<span class="chip ok">Press PRG on the beacon now · caught in about ${Math.max(12, Math.round(24 - age))} s</span>`
-  else { const wait = Math.max(0, Math.round((k === 5 ? 6 : k === 4 ? 7 : 4 - k) * 12 - age)); el.innerHTML = `<span class="chip">Best moment to press PRG: in ${wait} s</span> <span class="chip">or Mission → Inject forged frame (it waits for it)</span>` }
+  else { const wait = Math.max(0, Math.round((k === 5 ? 6 : k === 4 ? 7 : 4 - k) * 12 - age)); el.innerHTML = `<span class="chip">Best moment to press PRG: in ${wait} s</span> <span class="chip">or Mission → Inject forged frame: "with the next frame" goes anywhere in the batch, "at end of batch" is caught fastest</span>` }
 }
 setInterval(() => { if (S.page === "protocol") prCue() }, 1000)
 function prInit() {

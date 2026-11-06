@@ -61,7 +61,12 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
       <header class="ph"><h2>Operations</h2><span class="ph-note" id="ops-note"></span></header>
       <div class="ops-body">
         <div class="op-row"><button class="btn primary" id="op-start" type="button">Start session</button><button class="btn" id="op-stop" type="button">Stop</button></div>
-        <button class="btn danger" id="op-attack" type="button" title="The beacon transmits one forged frame; the ground must reject it">Inject forged frame</button>
+        <div class="op-row atk-row">
+          <button class="btn danger" id="op-attack" type="button" title="The beacon transmits one forged frame; the ground must reject it">Inject forged frame</button>
+          <select class="select" id="op-atk-when" aria-label="When the forged frame goes out" title="With the next frame: anywhere in the batch, caught when that batch's signature arrives (up to about 84 s). End of batch: rides with the 6th frame, caught about 12 to 24 s later.">
+            <option value="now" selected>with the next frame</option><option value="end">at end of batch (fast)</option>
+          </select>
+        </div>
         <div class="op-row">
           <button class="btn" id="op-buy" type="button" title="An agent pays 0.01 HBAR over x402 (HTTP) for measured wind">Buy wind · x402</button>
           <label class="sr" for="op-alt">Altitude</label><input class="input mono" id="op-alt" type="number" value="15000" step="1000" min="1000" max="19000" aria-label="Altitude in metres">

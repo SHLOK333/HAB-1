@@ -272,6 +272,14 @@ function beaconOnWifi() {
   const tryIp = ip => new Promise(res => { const s = net.connect({ host: ip, port: 2323, timeout: 600 }, () => { s.destroy(); res(ip) }); s.on("error", () => res(null)); s.on("timeout", () => { s.destroy(); res(null) }) })
   return Promise.all(Array.from({ length: 13 }, (_, i) => tryIp(`172.20.10.${i + 2}`))).then(r => r.find(Boolean) ?? null)
 }
+function attackNow() {
+  const e = state.lastFrame, k = e ? (e.seq + 1) % 6 : null
+  const wait = k == null ? null : (7 - k) * 12
+  send("cmd", { id: "attack-timing", name: "attack", line: k == null ? "arming the beacon now: the fake goes out with the next frame"
+    : `arming the beacon now: the fake goes out with seq ${e.seq + 1}, frame ${k + 1} of 6 in its batch; it is caught when that batch's signature frame arrives, in about ${wait} s` })
+  runAction("attack", {}, true)
+  return { ok: true, id: "attack-now" }
+}
 function armAttack() {
   const e = state.lastFrame, age = (Date.now() - state.lastFrameAt) / 1000
   if (e && e.seq % 6 === 4 && age < 9) { fireAttack(e.seq); return { ok: true, id: "attack-now" } }
@@ -285,7 +293,7 @@ function runAction(name, body, timed) {
   if (name === "attack" && !timed) {
     // check first, so the operator is not left waiting for a command that cannot reach the beacon
     beaconOnWifi().then(ip => {
-      if (ip) return armAttack()
+      if (ip) return body?.when === "end" ? armAttack() : attackNow()
       send("cmd", { id: "attack-timing", name: "attack", line: "The beacon is not on Wi-Fi, so this button cannot reach it. Press the PRG button on the beacon instead (the Protocol page shows the best moment), or open the iPhone's Personal Hotspot screen so the beacon rejoins." })
       send("cmd", { id: "attack-timing", name: "attack", done: true, code: 1 })
     })
