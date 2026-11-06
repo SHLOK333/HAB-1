@@ -350,7 +350,7 @@ class Agent:
                 if prev:
                     self.send_wind(prev, self.state)
                 self.peak = max(self.peak, self.state["alt_m"])
-                if self.state["flight_s"] < 0:                 # the replay started over
+                if self.state["flight_s"] < 0 or (prev and self.state["flight_s"] < prev["flight_s"] - 600):   # a new flight or pass began
                     self.phase, self.peak = "ascent", self.state["alt_m"]
                     self.hist.clear()
                 self.hist.append((self.state["flight_s"], self.state["alt_m"]))

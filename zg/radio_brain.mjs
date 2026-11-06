@@ -73,7 +73,7 @@ async function decide(state) {
 // ---------------------------------------------------------------- follow the verified frames
 let phase = "ascent", peak = 0, hist = [], lastSeq = -1, nextAsk = 0, busy = false
 async function onVerified(e) {
-  if (e.seq < lastSeq - 6 || e.flight_s < 0) { phase = "ascent"; peak = 0; hist = [] }      // beacon restarted, or the replay began again
+  if (e.seq < lastSeq - 6 || e.flight_s < 0 || (hist.length && e.flight_s < hist.at(-1)[0] - 600)) { phase = "ascent"; peak = 0; hist = [] }      // beacon restarted, or a new flight or pass began
   lastSeq = e.seq; peak = Math.max(peak, e.alt_m); hist.push([e.flight_s, e.alt_m]); hist = hist.slice(-8)
   if (phase !== "ascent" || peak < 1000 || e.alt_m > peak - 300 || busy || Date.now() < nextAsk) return
   busy = true; nextAsk = Date.now() + RETRY_S * 1000
