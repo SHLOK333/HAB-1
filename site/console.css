@@ -513,3 +513,24 @@ body[data-page="hedera"] #pg-hedera, body[data-page="arkiv"] #pg-arkiv { display
 .flightsel .fs-body .btn { width: auto; padding: 0 14px; height: 30px; }
 .flightsel .fs-cur { grid-column: 1 / -1; margin: 0; font-size: 11.5px; color: var(--text-2); }
 .flightsel .fs-cur b { color: var(--text); font-weight: 600; }
+
+/* partners dropdown */
+.nav-dd { position: relative; }
+.nav-dd-btn { height: 28px; display: inline-flex; align-items: center; gap: 4px; padding: 0 11px; border: 0; border-radius: 4px; background: none; color: var(--text-2); font: 550 12.5px "Red Hat Text", system-ui, sans-serif; cursor: pointer; transition: color 140ms ease, background 140ms ease; }
+.nav-dd-btn:hover, .nav-dd-btn[aria-expanded="true"] { color: var(--text); background: var(--s2); }
+.nav-dd-btn.cur { color: var(--text); background: var(--s3); box-shadow: inset 0 -2px 0 var(--accent); }
+.nav-menu { position: absolute; top: 34px; left: 0; z-index: 50; width: 290px; padding: 6px; display: grid; gap: 2px; background: var(--s1); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: var(--pop-shadow); }
+.nav .nav-menu a { height: auto; display: grid; gap: 2px; padding: 8px 10px; border-radius: 4px; color: var(--text); }
+.nav .nav-menu a b { font-size: 13px; font-weight: 600; }
+.nav .nav-menu a small { font-size: 11.5px; font-weight: 400; color: var(--text-3); }
+.nav .nav-menu a:hover, .nav .nav-menu a:focus-visible { background: var(--s2); box-shadow: none; }
+.nav .nav-menu a[aria-current="page"] { background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 2px 0 0 var(--accent); }
+.links::before { content: "Status"; font-size: 11px; color: var(--text-3); margin-right: 2px; }
+
+/* top bar: one line, always */
+.topbar { gap: 14px; }
+.brand, .brand span, .nav a, .nav-dd-btn, .links li, .clock { white-space: nowrap; }
+.brand span { display: none; }
+.nav { flex: none; }
+@media (max-width: 1500px) { .links::before { display: none; } .links { gap: 10px; } }
+@media (max-width: 1300px) { .links li { font-size: 0; gap: 0; } .links li i { width: 10px; height: 10px; } }

@@ -30,16 +30,20 @@ FORM: brief-pinned reference class (professional telemetry software), no concept
     <select id="session" class="select"><option value="flight">31 Oct 2026 flight log</option></select>
   </div>
   <nav class="nav" aria-label="Sections">
-    <a href="#/mission" data-p="mission">Mission</a>
-    <a href="#/protocol" data-p="protocol">Protocol</a>
-    <a href="#/flights" data-p="flights">Flights</a>
-    <span class="nav-sep" aria-hidden="true"></span>
-    <a href="#/zerog" data-p="zerog">0G</a>
-    <a href="#/hedera" data-p="hedera">Hedera</a>
-    <a href="#/arkiv" data-p="arkiv">Arkiv</a>
+    <a href="#/mission" data-p="mission" title="The live ground station: map, hardware status, transactions">Mission</a>
+    <a href="#/protocol" data-p="protocol" title="Each LoRa frame as it is received, checked in your browser">Radio protocol</a>
+    <a href="#/flights" data-p="flights" title="HAB-1, simulations and public balloons; fly any of them on the beacon">Flights</a>
+    <div class="nav-dd">
+      <button class="nav-dd-btn" id="nav-dd-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="nav-menu"><span id="nav-dd-label">Partners</span> <span aria-hidden="true">▾</span></button>
+      <div class="nav-menu" id="nav-menu" role="menu" hidden>
+        <a role="menuitem" href="#/zerog" data-p="zerog"><b>0G</b><small>AI decisions on the payload, and proof of them</small></a>
+        <a role="menuitem" href="#/hedera" data-p="hedera"><b>Hedera</b><small>Machines paying for balloon data (x402)</small></a>
+        <a role="menuitem" href="#/arkiv" data-p="arkiv"><b>Arkiv</b><small>The flight as public, queryable data</small></a>
+      </div>
+    </div>
   </nav>
-  <ul class="links" id="links" aria-label="Link health">
-    <li data-k="radio" data-go="protocol"><i></i>Radio</li><li data-k="payload" data-go="zerog"><i></i>Payload</li><li data-k="arkiv" data-go="arkiv"><i></i>Arkiv</li><li data-k="hedera" data-go="hedera"><i></i>Hedera</li><li data-k="zerog" data-go="zerog"><i></i>0G</li>
+  <ul class="links" id="links" aria-label="Link health" title="Live status of each part; click one to open its page">
+    <li data-k="radio" title="Radio: frames from the beacon, verified on the ground" data-go="protocol"><i></i>Radio</li><li data-k="payload" title="Payload: the Pi's agent and sensors" data-go="zerog"><i></i>Payload</li><li data-k="arkiv" title="Arkiv: frames published as public data" data-go="arkiv"><i></i>Arkiv</li><li data-k="hedera" title="Hedera: the x402 payment endpoint" data-go="hedera"><i></i>Hedera</li><li data-k="zerog" title="0G: AI decisions and their proof" data-go="zerog"><i></i>0G</li>
   </ul>
   <div class="clock mono" id="clock" aria-label="UTC time">--:--:-- UTC</div>
   <button class="icon-btn" id="theme" type="button" aria-label="Switch to light theme" title="Theme">

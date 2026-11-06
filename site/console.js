@@ -1084,7 +1084,7 @@ let live = false
 let stationState = null
 try { const r = await timeout(fetch("/api/state"), 2500); stationState = r.ok ? await r.json() : null; live = stationState?.station === true } catch {}
 if (live) {
-  S.mode = "live"; $("mode").textContent = "Live"; $("mode").dataset.mode = "live"; $("session").disabled = true; $("session").innerHTML = `<option>live ground station</option>`
+  S.mode = "live"; $("mode").textContent = "Live"; $("mode").dataset.mode = "live"; $("session").disabled = true; $("session").innerHTML = `<option>live ground station</option>`; $("session").hidden = true
   S.layers.archive = true; $("layers").querySelector('[data-l="archive"]').checked = true
   connectLive()
   if (stationState?.flight && !stationState.flight.builtin) { S.flightNow = stationState.flight; flightLabel() }
@@ -1109,11 +1109,19 @@ function route() {
   const want = location.hash.match(/^#\/(\w+)/)?.[1], page = SECTIONS.includes(want) ? want : "mission"
   S.page = page; document.body.dataset.page = page
   for (const a of document.querySelectorAll(".nav a")) { if (a.dataset.p === page) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current") }
-  document.title = page === "mission" ? "HAB-1 Ground Station" : `${document.querySelector(`.nav a[data-p="${page}"]`).textContent} · HAB-1`
+  const navA = document.querySelector(`.nav a[data-p="${page}"]`)
+  document.title = page === "mission" ? "HAB-1 Ground Station" : `${navA?.querySelector("b")?.textContent ?? navA?.textContent} · HAB-1`
+  const partner = ["zerog", "hedera", "arkiv"].includes(page)
+  $("nav-dd-btn").classList.toggle("cur", partner); $("nav-dd-label").textContent = partner ? navA.querySelector("b").textContent : "Partners"
+  $("nav-menu").hidden = true; $("nav-dd-btn").setAttribute("aria-expanded", "false")
   if (page === "mission") requestAnimationFrame(() => { map.resize(); layoutFlow(); draw() })
   PAGES?.show(page)
 }
 addEventListener("hashchange", route)
+// Partners menu: opens on click, closes on a choice, an outside click or Escape
+$("nav-dd-btn").onclick = e => { e.stopPropagation(); const open = $("nav-menu").hidden; $("nav-menu").hidden = !open; $("nav-dd-btn").setAttribute("aria-expanded", open); if (open) $("nav-menu").querySelector("a")?.focus() }
+document.addEventListener("click", e => { if (!e.target.closest(".nav-dd")) { $("nav-menu").hidden = true; $("nav-dd-btn").setAttribute("aria-expanded", "false") } })
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("nav-menu").hidden) { $("nav-menu").hidden = true; $("nav-dd-btn").setAttribute("aria-expanded", "false"); $("nav-dd-btn").focus() } })
 initFlightChooser()
 for (const li of document.querySelectorAll(".links [data-go]")) li.onclick = () => { location.hash = `#/${li.dataset.go}` }
 route()
