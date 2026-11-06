@@ -11,6 +11,8 @@ Partner tracks: **0G** (Physical AI), **Hedera** (x402 agents that pay), **Arkiv
 > given), **datasheet**, or **assumed**. Things that are not done are listed in
 > [What is not done](#what-is-not-done).
 
+**Live demo: [hab-1.vercel.app](https://hab-1.vercel.app)** (the console in Archive mode; the live hardware runs on the ground-station laptop at `localhost:8090`).
+
 ### For judges: where to look
 
 The ground-station console has one page per track. Each page reads public sources and lets
@@ -1209,7 +1211,8 @@ no delivery was heard for any of them, and the settler has nothing to charge.)
 | x402 over the radio, far away | needs a ground station in range within 120 s (a Hedera transaction's valid window); the voucher mode covers longer gaps |
 | Simulated Arkiv receivers | funded, not used |
 | The map on storage we do not control (Swarm) | not done; the page is served from the laptop |
-| Public live demo link, demo video | not done |
+| Public live demo link | [hab-1.vercel.app](https://hab-1.vercel.app), deployed 7 Nov 2026 |
+| Demo video | not done |
 | Licence file | not added yet; an open-source licence is required by the tracks |
 | Git history | on GitHub: https://github.com/SHLOK333/HAB-1 |
 
