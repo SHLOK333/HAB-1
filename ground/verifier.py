@@ -7,7 +7,11 @@ lists the first 4 bytes of SHA-256(salt + frame) for each of the 6 data frames,
 with the batch's salt and the beacon's boot number, signed by the beacon. A data
 frame is VERIFIED only if the signature is valid and its hash is in the list at its
 seq. Anything else claiming that seq is REJECTED as fake; if two frames for one seq
-both match, both are rejected (CONFLICT). A batch no newer than one already accepted
+both match, both are rejected (CONFLICT). A batch spans 7 slots (84 s), so a frame still
+pending STALE_S after it was heard can no longer be signed: its batch's SIG frame was lost
+or the beacon restarted before sending it (seqs restart at 0 on every boot, so the next
+boot reuses the seq). When a valid SIG frame arrives, such frames are logged UNSIGNED and
+dropped, never accepted; before 6 Nov 2026 they were wrongly called FAKE. A batch no newer than one already accepted
 (by boot, then first seq) is a REPLAY and nothing in it is accepted; the newest
 accepted batch is kept in ground/state, so restarting the verifier does not forget it.
 
@@ -32,6 +36,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 MAGIC_DATA, MAGIC_SIG, BATCH, HASH_LEN, SIGNED_LEN, SIG_LEN, SIG_HASHES = 0xB2, 0xB3, 6, 4, 36, 100, 12
 MAGIC_DELIVERY, DELIVERY_LEN, DELIVERY_SIGNED, DELIVERY_TAG = 0xB4, 88, 24, b"hab-delivery-v1"
 MAGIC_OFFER, OFFER_LEN = 0xB5, 20
+STALE_S = 150                          # seconds: older pending frames cannot belong to a new SIG
 BOARD_EVENTS = ("voucher", "buy", "x402req", "x402pay", "x402refused", "x402policy", "sent", "clock")
 
 
@@ -59,7 +64,8 @@ class Verifier:
         self.verify = verify
         self.out = out
         self.send = send                       # send(command) to the ground modem
-        self.pending = {}                      # seq -> list of (frame bytes, decoded, rssi, snr)
+        self.pending = {}                      # seq -> list of (frame bytes, decoded, rssi, snr, heard at)
+        self.now = time.time
         self.track = []                        # positions the ground accepted, in order
         # the newest batch accepted from this beacon, (boot, first seq): anything not newer is a replay
         self.high_path = os.path.join(HERE, "state", f"highwater-{pubkey_hex[:16]}.json")
@@ -77,7 +83,7 @@ class Verifier:
     def on_data(self, b, rssi, snr):
         d = decode_data(b)
         cands = self.pending.setdefault(d["seq"], [])
-        cands.append((b, d, rssi, snr))
+        cands.append((b, d, rssi, snr, self.now()))
         mins = d["flight_s"] / 60
         line = (f"seq {d['seq']:4d}  T{mins:+6.1f} min  {d['alt_m']:5d} m  {d['lat']:.5f} {d['lon']:.5f}"
                 f"  rssi {rssi:.0f} snr {snr:.1f}"
@@ -111,6 +117,21 @@ class Verifier:
             self.high = (boot, first)
             json.dump(list(self.high), open(self.high_path, "w"))
         results = []
+        if sig_ok and not replay:
+            # frames heard too long ago to be in this batch: the beacon restarted, or a SIG was lost
+            cutoff = self.now() - STALE_S
+            for seq in sorted(self.pending):
+                stale = [c for c in self.pending[seq] if c[4] < cutoff]
+                if not stale:
+                    continue
+                self.pending[seq] = [c for c in self.pending[seq] if c[4] >= cutoff]
+                if not self.pending[seq]:
+                    del self.pending[seq]
+                for fb, d, frssi, fsnr, _ in stale:
+                    results.append((seq, "UNSIGNED beacon restarted"))
+                    self.log("verdict", seq=seq, verdict="UNSIGNED beacon restarted", hex=fb.hex(), rssi=frssi, snr=fsnr,
+                             flight_s=d["flight_s"], lat=d["lat"], lon=d["lon"], alt_m=d["alt_m"], beacon_key=self.pubkey_hex,
+                             live_hpa=d["live_hpa"], live_c=d["live_c"], live_src=d["live_src"])
         for i, h in enumerate(hashes):
             seq = first + i
             cands = self.pending.pop(seq, [])
@@ -118,7 +139,7 @@ class Verifier:
                 results.append((seq, "MISSING")); continue
             # distinct frames that match: the same frame heard twice is not a conflict
             matching = len({fb for fb, *_ in cands if hashlib.sha256(salt + fb).digest()[:HASH_LEN] == h})
-            for fb, d, frssi, fsnr in cands:
+            for fb, d, frssi, fsnr, _ in cands:
                 match = hashlib.sha256(salt + fb).digest()[:HASH_LEN] == h
                 if not sig_ok:          verdict = "REJECTED bad signature"
                 elif replay:            verdict = "REPLAY REJECTED"
