@@ -122,6 +122,11 @@ function watchLog(name, onLine) {
   }
   check()
 }
+// 0G over LoRa (zg/radio_brain.mjs): decisions the ground station got from 0G and sent up
+watchLog("brain", l => {
+  const m = l.match(/^\S+ (.*)/); if (!m) return
+  send("pi", { kind: "checkpoint", name: "burst", text: `0G over LoRa · ${m[1]}`, safeStop: /did not answer/.test(m[1]) })
+})
 watchLog("publisher", l => {
   let m
   if ((m = l.match(/^published (\d+): (.*?)\s+tx (0x[0-9a-f]+)\s+(\d+) ms/))) {

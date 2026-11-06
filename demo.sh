@@ -114,6 +114,8 @@ cmd_start() {
   launch publisher "$ROOT/arkiv" node --env-file=../.env publish.mjs --log "../ground/log/$log" --from-start --run "$run"
   launch x402 "$ROOT/hedera" node --env-file=../.env server.mjs
   launch map "$ROOT/web" python3 -m http.server "$MAP_PORT" --bind 127.0.0.1
+  # 0G over LoRa: the ground station asks 0G at the payload's checkpoints and sends the answer up
+  launch brain "$ROOT/zg" node --env-file=../.env radio_brain.mjs
   # The Pi runs its agent as a service; tell it the session name so its episode log matches.
   if tools/pi.sh "echo $run > ~/ethglobal/run && sudo systemctl restart hab-agent" 2>/dev/null; then
     say "Pi agent restarted for session $run"
@@ -129,13 +131,13 @@ cmd_start() {
 
 cmd_status() {
   say "session $(cat "$D/run" 2>/dev/null || echo '-')"
-  for n in verifier publisher x402 map; do
+  for n in verifier publisher x402 map brain; do
     if running $n; then say "== $n running (pid $(cat "$D/$n.pid"))"; else say "== $n not running"; fi
     [ -f "$D/$n.log" ] && grep -vE "localstorage|trace-warnings" "$D/$n.log" | tail -3 | sed 's/^/   /'
   done
 }
 
-cmd_stop() { for n in publisher verifier x402 map; do halt $n; done; }
+cmd_stop() { for n in brain publisher verifier x402 map; do halt $n; done; }
 
 case "${1:-}" in
   setup)    cmd_setup ;;
@@ -155,8 +157,8 @@ case "${1:-}" in
   upload)   run=$(cat "$D/run" 2>/dev/null); [ -n "$run" ] || { say "no session: ./demo.sh start first"; exit 1; }
             (cd zg && node --env-file=../.env upload.mjs "$run" 2>&1 | grep -E "^episode|^0G Storage|^EpisodeRegistry|chainscan") ;;
   pi-log)   tools/pi.sh 'journalctl -u hab-agent -f -o cat' ;;
-  pi-key)   # copy the 0G Private Computer key from .env to the Pi's ~/ethglobal/.env, never printed
-            grep -E "^ZG_PC_(API_KEY|BASE_URL)=" .env | tools/pi.sh 'umask 077; cat > ~/ethglobal/.env && sudo systemctl restart hab-agent 2>/dev/null; grep -c "^ZG_PC_API_KEY=." ~/ethglobal/.env | sed "s/^1$/0G key on the Pi: set/; s/^0$/0G key on the Pi: EMPTY/"' ;;
+  pi-key)   # copy the 0G Private Computer key and the LoRa decision key from .env to the Pi's ~/ethglobal/.env, never printed
+            grep -E "^(ZG_PC_(API_KEY|BASE_URL)|ZG_RADIO_KEY)=" .env | tools/pi.sh 'umask 077; cat > ~/ethglobal/.env && sudo systemctl restart hab-agent 2>/dev/null; grep -c "^ZG_PC_API_KEY=." ~/ethglobal/.env | sed "s/^1$/0G key on the Pi: set/; s/^0$/0G key on the Pi: EMPTY/"' ;;
   radio-setup) running verifier && { say "stop the verifier first (./demo.sh stop): setup talks to the ground Heltec over USB"; exit 1; }
             (cd hedera && node --env-file=../.env radio_setup.mjs "${2:-1}" 2>&1 | grep -vE "localstorage|trace-warnings") ;;
   radio-buy) running verifier || { say "the verifier passes the command to the ground Heltec: ./demo.sh start first"; exit 1; }
