@@ -24,7 +24,7 @@ Only the result goes down, and anyone can recompute it from the two signed frame
 
 usage: pi/agent.py [--run NAME] [--thermal-c 70] [--vision-s 60] [--tap /dev/ttyAMA0]
 """
-import argparse, collections, json, math, os, struct, sys, time
+import argparse, collections, hashlib, hmac, json, math, os, struct, sys, time
 
 from nacl.signing import SigningKey
 
@@ -86,6 +86,8 @@ class Agent:
         self.log_path = os.path.join(HOME, "episodes", f"{self.run}.jsonl")
         self.state, self.peak, self.phase = None, 0, "ascent"
         self.hist = collections.deque(maxlen=8)        # (flight_s, alt_m) of the last frames
+        self.radio_key = bytes.fromhex(os.environ.get("ZG_RADIO_KEY", "") or "00")  # 0G over LoRa, shared with the ground station
+        self.radio_seen = set()
         self.camera_paused, self.safe = False, False
         self.retry_at = {}
         self.next_baro, self.last_baro = 0, None
@@ -204,6 +206,44 @@ class Agent:
                 return d, meta
             raise first
 
+    # ------------------------------------------------------------ 0G over LoRa
+    RADIO_MODELS = {1: "vela-2.0-9b", 2: "glm-5.3", 3: "0gm-1.0-35b-a3b"}
+
+    def on_uplink(self, beacon_seq, b):
+        """A decision the ground station got from 0G, sent up over LoRa (zg/radio_brain.mjs).
+        Checked here: the 8-byte HMAC tag (key shared before flight), the time (5 min) and the
+        frame it is based on (recent). Repeats of the same decision are ignored."""
+        if len(self.radio_key) != 32 or b[0] != 0x5A:
+            return
+        if not hmac.compare_digest(hmac.new(self.radio_key, b[:19], hashlib.sha256).digest()[:8], b[19:27]):
+            print(f"0G via LoRa: payload with a bad tag ignored (seq {beacon_seq})"); return
+        checkpoint, action, pbyte, model = b[1], b[2], b[3], b[4]
+        seq, t = struct.unpack("<II", b[5:13])
+        rid = b[13:19].hex()
+        if rid in self.radio_seen:
+            return
+        self.radio_seen.add(rid)
+        cur = self.state["seq"] if self.state else seq
+        if abs(time.time() - t) > 300 or not (cur - 30 <= seq <= cur + 2):
+            print(f"0G via LoRa: stale decision ignored (frame {seq}, now {cur})"); return
+        if checkpoint != 1:
+            return
+        name = self.RADIO_MODELS.get(model, f"model {model}")
+        act = "start_recovery" if action == 1 else "hold"
+        p = None if pbyte == 255 else pbyte / 254
+        decision = {"action": act, "reason": f"{name} via LoRa uplink" + (f", P(start_recovery) = {p:.3f}" if p is not None else ", no probability (fallback)"),
+                    "via": "lora-uplink", "based_on_seq": seq}
+        if p is not None:
+            decision["probabilities"] = {"start_recovery": round(p, 4), "hold": round(1 - p, 4)}
+        meta = {"model": name, "request_id": f"lora:{rid}", "response_id": None}
+        inputs = {"flight": self.state, "peak_m": self.peak, "uplink": b.hex(), "beacon_seq": beacon_seq}
+        if act == "start_recovery" and self.phase == "ascent":
+            self.phase = "descent"
+            self.to_beacon("0G via LoRa: recovery")
+            self.record("burst", inputs, decision, meta, "phase=descent (0G decision received over LoRa)")
+        else:
+            self.record("burst", inputs, decision, meta, f"no change, phase={self.phase}")
+
     # ------------------------------------------------------------ checkpoints
     def check_burst(self):
         s = self.state
@@ -303,7 +343,9 @@ class Agent:
         while b"\n" in self.buf:
             line, self.buf = self.buf.split(b"\n", 1)
             parts = line.decode(errors="replace").strip().split()
-            if len(parts) == 3 and parts[0] == "TAP" and len(parts[2]) == 56:
+            if len(parts) == 3 and parts[0] == "UP" and len(parts[2]) == 54:
+                self.on_uplink(int(parts[1]), bytes.fromhex(parts[2]))
+            elif len(parts) == 3 and parts[0] == "TAP" and len(parts[2]) == 56:
                 prev, self.state = self.state, decode_frame(bytes.fromhex(parts[2]))
                 if prev:
                     self.send_wind(prev, self.state)
