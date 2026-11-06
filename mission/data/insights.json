@@ -529,5 +529,57 @@
   "at": "2026-11-06T08:41:42.384Z",
   "entityKey": "0x5f022a1f00df9728b760b72df97fdcbee9f0e1f312007020f8ce16e251238fbf",
   "txHash": "0xc63d65bd14694ab02b101be94e8b6bbe3e381767c67d9c600dd8d1dec03d9401"
+ },
+ {
+  "topic": "jet-stream",
+  "model": "glm-5.3",
+  "teeAttested": true,
+  "requestId": "chatcmpl-04e1a917-1244-4149-8e62-de3792d08621",
+  "e2ee": "sealed",
+  "headline": "Jet stream at 10-14 km, peak 25.1 m/s measured; GFS off most at 10-12 km (-3.5 m/s)",
+  "findings": [
+   "Jet stream core is in the 10-14 km band: measured means of 21.0 m/s (10-12 km) and 21.7 m/s (12-14 km), with the flight maximum of 25.1 m/s at 12-14 km.",
+   "Winds drop off sharply above the core: 11.5 m/s mean at 14-16 km, 6.3 m/s at 16-18 km, and 4.3 m/s at 18-20 km - roughly a quarter of jet strength by 18 km.",
+   "GFS captures the overall profile shape (peak at 12-14 km, 23.8 m/s; weakening aloft), but each GFS band is a single sample (n=1) versus 9-14 measured points per band.",
+   "Band-by-band GFS minus measured mean: 8-10 km +1.7 (19.3 vs 17.6), 10-12 km -3.5 (17.5 vs 21.0), 12-14 km +2.1 (23.8 vs 21.7), 14-16 km +2.5 (14.0 vs 11.5), 16-18 km +0.2 (6.5 vs 6.3), 18-20 km -1.0 (3.3 vs 4.3).",
+   "Best agreement is at 16-18 km (+0.2 m/s); measured winds never exceed 8.1 m/s above 16 km, so drift aloft is minimal.",
+   "Measured data ends at 20 km; above that only GFS exists (7.3 m/s at 20-22 km, 4.8 m/s at 22-24 km) and cannot be verified against the flight."
+  ],
+  "anomalies": [
+   "Largest model-measured discrepancy is at 10-12 km: GFS reads 17.5 m/s versus a measured mean of 21.0 m/s, underestimating the jet's lower flank by 3.5 m/s (~17%).",
+   "GFS overestimates 12-16 km by 2.1-2.5 m/s, biasing the jet core stronger and slightly broader on its upper side than measured.",
+   "GFS and measured disagree on where the jet is strongest relative to 12 km: GFS implies a sharper peak at 12-14 km (23.8) with a weak 10-12 km (17.5), while measurements show a broader, flatter jet of ~21-22 m/s across 10-14 km.",
+   "No measured wind data above 20 km despite the 8-24 km query range; the 20-24 km GFS values are unvalidated and should not be trusted for burst-altitude drift planning.",
+   "GFS n=1 per band means band averages hide within-band shear; the measured max-minus-mean spread (e.g., 25.1 vs 21.7 at 12-14 km) suggests gradients the model sample may miss."
+  ],
+  "guard": {
+   "model": "qwen3.6-plus",
+   "requestId": "chatcmpl-e2367732-dfef-91b5-a0a7-bae908fcba8d",
+   "teeVerified": false,
+   "e2ee": "none",
+   "verdict": "supported",
+   "flagged": [],
+   "fallbackFrom": "vela-2.0-9b (502)"
+  },
+  "arkivQuery": "Wind where flight=hab1-2026-10-31 and dataset=mission-v1 and altM >= 8000 and source = measured | gfs, ordered by altM",
+  "inputs": [
+   "8-10km measured: n=14 mean=17.6 max=20.8 m/s",
+   "10-12km measured: n=11 mean=21.0 max=23.0 m/s",
+   "12-14km measured: n=12 mean=21.7 max=25.1 m/s",
+   "14-16km measured: n=12 mean=11.5 max=14.8 m/s",
+   "16-18km measured: n=11 mean=6.3 max=8.1 m/s",
+   "18-20km measured: n=9 mean=4.3 max=6.6 m/s",
+   "8-10km gfs: n=1 mean=19.3 max=19.3 m/s",
+   "10-12km gfs: n=1 mean=17.5 max=17.5 m/s",
+   "12-14km gfs: n=1 mean=23.8 max=23.8 m/s",
+   "14-16km gfs: n=1 mean=14.0 max=14.0 m/s",
+   "16-18km gfs: n=1 mean=6.5 max=6.5 m/s",
+   "18-20km gfs: n=1 mean=3.3 max=3.3 m/s",
+   "20-22km gfs: n=1 mean=7.3 max=7.3 m/s",
+   "22-24km gfs: n=1 mean=4.8 max=4.8 m/s"
+  ],
+  "at": "2026-11-06T09:12:38.242Z",
+  "entityKey": "0x62b2e2fa635186666b997b28e82fa71d9f1d34f9cb92ddd42b15d56aa4cf35fe",
+  "txHash": "0x1e02834fdeb49bf738cff589760bfebeaf999d3f5209d6d3a69445a91cec526e"
  }
 ]

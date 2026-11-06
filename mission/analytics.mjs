@@ -26,7 +26,9 @@ const account = privateKeyToAccount(process.env.ARKIV_GROUND_PRIVATE_KEY)
 const wallet = createWalletClient({ chain, transport: http(), account })
 const ZG = process.env.ZG_PC_BASE_URL, KEY = process.env.ZG_PC_API_KEY
 // TEE-attested models first; the last ones are plain fallbacks, recorded as teeAttested=false
-const PREFERRED = (process.env.ZG_ANALYTICS_MODELS ?? "0gm-1.0-35b-a3b,deepseek-v4-pro,glm-5.1,qwen3.6-plus,deepseek-v4-flash").split(",")
+const PREFERRED = (process.env.ZG_ANALYTICS_MODELS ?? "0gm-1.0-35b-a3b,glm-5.3,deepseek-v4-pro,qwen3.6-plus,deepseek-v4-flash").split(",")
+// glm-5.3 is asked in private trust mode (sealed TeeML providers only) and reasons first, so it needs room
+const OPTS = { "glm-5.3": { max_tokens: 2000, headers: { "X-0G-Provider-Trust-Mode": "private" } } }
 const GUARD = process.env.ZG_GUARD_MODEL ?? "vela-2.0-9b"
 const base = and(eq("flight", FLIGHT), eq("dataset", DATASET))
 
@@ -66,6 +68,19 @@ const TOPICS = {
 }
 
 // ---------------------------------------------------------------- 0G
+function lastJson(text) {
+  const objs = []
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "{") continue
+    let depth = 0, inStr = false
+    for (let j = i; j < text.length; j++) {
+      const ch = text[j]
+      if (inStr) { if (ch === "\\") j++; else if (ch === '"') inStr = false; continue }
+      if (ch === '"') inStr = true; else if (ch === "{") depth++; else if (ch === "}" && --depth === 0) { try { objs.push(JSON.parse(text.slice(i, j + 1))) } catch {} i = j; break }
+    }
+  }
+  return objs.at(-1) ?? null
+}
 async function pickModel() {
   const r = await fetch(`${ZG}/models`, { headers: { Authorization: `Bearer ${KEY}` } })
   const list = (await r.json()).data ?? []
@@ -74,14 +89,16 @@ async function pickModel() {
   return offered       // in order of preference; a model 0G lists can still be down, so each is tried in turn
 }
 async function ask0G(model, topic, d) {
-  const body = { model, temperature: 0, max_tokens: 500, chat_template_kwargs: { enable_thinking: false }, messages: [
+  const body = { model, temperature: 0, max_tokens: OPTS[model]?.max_tokens ?? 500, chat_template_kwargs: { enable_thinking: false }, messages: [
     { role: "system", content: "You analyse high-altitude balloon telemetry for a recovery team. Answer only from the data given. Reply as JSON: {\"headline\": \"<= 100 characters\", \"findings\": [\"...\"], \"anomalies\": [\"...\"]}" },
     { role: "user", content: `Topic: ${topic}\nData read from Arkiv (${d.q}), ${d.n} entities:\n${d.digest.join("\n")}\n\nQuestion: ${d.ask}` }] }
-  const r = await fetch(`${ZG}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${KEY}`, "content-type": "application/json" }, body: JSON.stringify(body) })
+  const r = await fetch(`${ZG}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${KEY}`, "content-type": "application/json", ...OPTS[model]?.headers }, body: JSON.stringify(body) })
   const j = await r.json()
   if (!r.ok) throw new Error(`0G ${r.status} ${j.error?.code ?? ""}: ${j.error?.message ?? JSON.stringify(j).slice(0, 120)} (request ${j.request_id ?? r.headers.get("x-request-id")})`)
   const text = j.choices[0].message.content
-  let parsed; try { parsed = JSON.parse(text.replace(/^```(json)?|```$/g, "").trim()) } catch { parsed = { headline: text.slice(0, 100), findings: [text], anomalies: [] } }
+  // some models reason in the answer before the JSON: take the last complete JSON object
+  const parsed = lastJson(text)
+  if (!parsed?.headline) throw new Error(`${model} gave no JSON answer: ${text.slice(0, 80)}`)
   return { id: j.id, e2ee: r.headers.get("x-0g-e2ee"), parsed, usage: j.usage }
 }
 
@@ -98,15 +115,15 @@ async function guard(d, parsed) {
   const requestId = j.x_0g_trace?.request_id ?? r.headers.get("x-request-id")
   if (!r.ok) {
     // Vela down (seen 6 Nov 2026): a 0G chat model lists the unsupported claims instead; recorded under its own name
-    for (const m of ["0gm-1.0-35b-a3b", "qwen3.6-plus"]) {
+    for (const m of ["glm-5.3", "0gm-1.0-35b-a3b", "qwen3.6-plus"]) {
       try {
-        const c = await fetch(`${ZG}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${KEY}`, "content-type": "application/json" }, body: JSON.stringify({ model: m, temperature: 0, max_tokens: 300,
+        const c = await fetch(`${ZG}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${KEY}`, "content-type": "application/json", ...OPTS[m]?.headers }, body: JSON.stringify({ model: m, temperature: 0, max_tokens: OPTS[m]?.max_tokens ?? 300,
           chat_template_kwargs: { enable_thinking: false }, messages: [{ role: "system", content: 'You check claims against data. Reply with JSON only: {"unsupported": ["<exact phrase from the INSIGHT that the SOURCE DATA does not support>", ...]} (an empty list if all are supported).' },
           { role: "user", content: state }] }) })
         const cj = await c.json(); if (!c.ok) continue
-        const out = JSON.parse(cj.choices[0].message.content.replace(/^```(json)?|```$/g, "").trim())
+        const out = lastJson(cj.choices[0].message.content ?? ""); if (!out) continue
         const flagged = (out.unsupported ?? []).filter(x => typeof x === "string" && x.trim()).map(text => ({ text, p: null }))
-        return { model: m, requestId: cj.id ?? c.headers.get("x-request-id"), teeVerified: false, verdict: flagged.length ? "flagged" : "supported", flagged, fallbackFrom: `${GUARD} (${r.status})` }
+        return { model: m, requestId: cj.id ?? c.headers.get("x-request-id"), teeVerified: c.headers.get("x-0g-e2ee") === "sealed", e2ee: c.headers.get("x-0g-e2ee"), verdict: flagged.length ? "flagged" : "supported", flagged, fallbackFrom: `${GUARD} (${r.status})` }
       } catch {}
     }
     throw new Error(`0G guard ${r.status}: ${j.error?.message ?? JSON.stringify(j).slice(0, 120)} (request ${requestId})`)
