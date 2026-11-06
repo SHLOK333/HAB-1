@@ -37,9 +37,9 @@
   "checkedAt": "2026-11-06T11:25:00+05:30",
   "teeAttestedModelsListed": 8,
   "modelsListed": 124,
-  "decisionModel": "0gm-1.0-35b-a3b",
+  "decisionModel": "vela-2.0-9b (burst, thermal) \u00b7 laya (frame deletion check)",
   "visionModel": "qwen3-vl-plus",
-  "status": "0G answers on the payload: at burst the Pi asked 0gm-1.0-35b-a3b (TEE-attested) and got start_recovery, then switched to descent mode. Every decision is signed on the Pi and the episode log is on 0G Storage, its root recorded in EpisodeRegistry on 0G Chain. Three analyses of Arkiv data are stored on Arkiv with their 0G request IDs.",
+  "status": "0G decides on the payload with calibrated probabilities: Vela 2.0 9B (TEE-attested decision model) calls burst and thermal, and the payload acts only above 0.8; before a camera frame is deleted, Laya must agree from the vision model's description that it is empty. At burst Vela gave start_recovery 0.924 and the Pi switched to descent mode. Every decision is signed on the Pi and the episode log is on 0G Storage, its root in EpisodeRegistry on 0G Chain. Each 0G analysis of Arkiv data is checked by Vela for claims the data does not support before it is stored on Arkiv.",
   "insightsGenerated": 3,
   "attestedModels": [
    "0gm-1.0-35b-a3b",
@@ -74,7 +74,16 @@
      "requestId": "170cc01d976c58fe, 5b202ba6-1f41-4bc5-a60d-324150ff5832"
     }
    }
-  ]
+  ],
+  "decisionModels": {
+   "guard": "vela-2.0-9b",
+   "textCheck": "laya",
+   "gate": {
+    "burst": 0.8,
+    "thermal": 0.8,
+    "deleteFrame": 0.7
+   }
+  }
  },
  "readings": {
   "recordedGB": 51.2,

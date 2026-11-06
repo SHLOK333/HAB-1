@@ -358,10 +358,10 @@ async function loadForecast() {
 async function loadInsights() {
   try {
     const a = await timeout(arkiv(), 15000), { and, eq, desc } = a.q
-    const res = await timeout(a.client.select({ topic: true, model: true, teeAttested: true, requestId: true, headline: true, createdAt: true, $key: true })
+    const res = await timeout(a.client.select({ topic: true, model: true, teeAttested: true, requestId: true, headline: true, createdAt: true, guardModel: true, guardVerdict: true, guardRequestId: true, $key: true })
       .from(a.Insight).where(and(eq("flight", FLIGHT), eq("dataset", DATASET))).ownedBy(OWNER).orderBy(desc("createdAt")).limit(12).fetch(), 20000)
     const rows = res.entities.map(val)
-    S.insightsHtml = rows.length ? `<ul class="list">${rows.map(r => `<li><span><span class="dot" data-st="${r.teeAttested === "true" ? "ok" : "warn"}"></span> <b>${esc(r.headline)}</b></span><span class="mono">${esc(r.topic)} · ${esc(r.model)} · ${r.teeAttested === "true" ? "TEE-attested" : "not attested"}</span><span class="mono">0G ${esc(r.requestId)}</span><span class="mono">Arkiv ${short(r.$key)} · ${new Date(Number(r.createdAt) * 1000).toISOString().slice(0, 16).replace("T", " ")} UTC</span></li>`).join("")}</ul>`
+    S.insightsHtml = rows.length ? `<ul class="list">${rows.map(r => `<li><span><span class="dot" data-st="${r.teeAttested === "true" ? "ok" : "warn"}"></span> <b>${esc(r.headline)}</b></span><span class="mono">${esc(r.topic)} · ${esc(r.model)} · ${r.teeAttested === "true" ? "TEE-attested" : "not attested"}</span><span class="mono">0G ${esc(r.requestId)}</span>${r.guardVerdict ? `<span class="mono ${r.guardVerdict === "supported" ? "ok" : "warn"}">claims checked by ${esc(r.guardModel)}: ${r.guardVerdict === "supported" ? "all supported by the Arkiv data" : "some claims NOT supported"} · 0G ${esc(r.guardRequestId)}</span>` : ""}<span class="mono">Arkiv ${short(r.$key)} · ${new Date(Number(r.createdAt) * 1000).toISOString().slice(0, 16).replace("T", " ")} UTC</span></li>`).join("")}</ul>`
       : `<p class="empty">No analysis stored yet. Run 0G analysis in Operations.</p>`
   } catch (e) { S.insightsHtml = `<p class="empty">Arkiv did not answer (${esc(e.message)}).</p>` }
   if ($("zg-ins")) $("zg-ins").innerHTML = S.insightsHtml
@@ -519,7 +519,7 @@ function arkiv() {
     const Packet = defineSchema("boscon.hab.packet", { flight: str().indexed(), run: str().indexed(), beaconKey: str().indexed(), seq: u64().indexed(), flightS: i32().indexed(), lat: dec().indexed(), lon: dec().indexed(), altM: i32().indexed(), verdict: str().indexed(), receiver: str(), rssi: dec(), snr: dec(), frame: bytes(), livePa: dec().optional(), liveC: dec().optional() })
     const Run = defineSchema("boscon.hab.run", { flight: str().indexed(), run: str().indexed(), beaconKey: str().indexed(), startedAt: u64().indexed(), receiver: str(), note: str() })
     const PublicFix = defineSchema("boscon.hab.public", { dataset: str().indexed(), kind: str().indexed(), callsign: str().indexed(), t: u64().indexed(), lat: dec().indexed(), lon: dec().indexed(), altM: i32().indexed(), vzMs: dec() })
-    const Insight = defineSchema("boscon.hab.insight", { flight: str().indexed(), dataset: str().indexed(), topic: str().indexed(), model: str().indexed(), teeAttested: str().indexed(), requestId: str(), createdAt: u64().indexed(), headline: str(), query: bytes(), body: bytes() })
+    const Insight = defineSchema("boscon.hab.insight", { flight: str().indexed(), dataset: str().indexed(), topic: str().indexed(), model: str().indexed(), teeAttested: str().indexed(), requestId: str(), createdAt: u64().indexed(), headline: str(), query: bytes(), body: bytes(), guardModel: str().indexed(), guardVerdict: str().indexed(), guardRequestId: str() })
     return { client: sdk.createPublicClient({ chain: chains.rabdi({ accessKey: "" }), transport: viem.http() }), q, sc, Wind, Prediction, Packet, Run, PublicFix, Insight }
   })())
 }

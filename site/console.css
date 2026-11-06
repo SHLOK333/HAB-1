@@ -305,3 +305,4 @@ body { letter-spacing: -0.003em; }
 .stage > *, .center > *, .dock .pane { min-width: 0; }
 .fnode.compact .fnode-sub { display: none; }
 .fnode.compact dl div:nth-child(n+3) { display: none; }
+.list .mono.ok { color: var(--nominal); } .list .mono.warn { color: var(--caution); }
