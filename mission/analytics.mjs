@@ -53,7 +53,7 @@ const TOPICS = {
   verification: async () => {
     const q = "count(Packet) where flight=hab1-2026-10-31 and verdict=<each>, owned by this ground station"
     const digest = []
-    for (const verdict of ["verified", "fake", "bad_signature", "unverified", "replay", "conflict"])
+    for (const verdict of ["verified", "fake", "bad_signature", "unverified", "replay", "conflict", "unsigned"])
       digest.push(`${verdict}: ${await reader.count().from(Packet).where(and(eq("flight", FLIGHT), eq("verdict", verdict))).ownedBy(account.address).fetch()}`)
     return { q, n: digest.length, digest, ask: "These are counts of received telemetry frames by verification verdict. What do they say about the link and about attacks on it?" }
   },
