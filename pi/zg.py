@@ -16,6 +16,10 @@ VISION_MODEL = "qwen3-vl-plus"
 # 0.91; "clear view of the horizon": 0.14), so Laya checks the vision model's words.
 GUARD_MODEL = "vela-2.0-9b"
 TEXT_CHECK_MODEL = "laya"
+# When 0G's decision models are down (seen 6 Nov 2026: Vela and Laya had no healthy provider),
+# a checkpoint asks these 0G chat models instead, in order. Their answers carry no calibrated
+# probability, and qwen3.6-plus is not TEE-attested; the log says both.
+CHAT_FALLBACK = [("0gm-1.0-35b-a3b", True), ("qwen3.6-plus", False)]
 
 
 class ZgUnavailable(Exception):

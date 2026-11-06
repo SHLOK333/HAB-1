@@ -30,7 +30,7 @@ from nacl.signing import SigningKey
 
 sys.path.insert(0, os.path.dirname(__file__))
 import sensors
-from zg import GUARD_MODEL, TEXT_CHECK_MODEL, VISION_MODEL, Zg, ZgUnavailable
+from zg import CHAT_FALLBACK, GUARD_MODEL, TEXT_CHECK_MODEL, VISION_MODEL, Zg, ZgUnavailable
 
 # Probability a decision model must give the consequential action before the payload takes it.
 GATE = {"burst": 0.8, "thermal": 0.8, "delete_frame": 0.7}
@@ -186,6 +186,23 @@ class Agent:
             self.safe = True
             return None, None, str(e)
 
+    def gated(self, state, instructions, crit, act, gate, chat_user):
+        """Vela with its probability gate; if 0G's decision models are down, a 0G chat model
+        (labelled: no calibrated probability, TEE-attested or not). Raises ZgUnavailable if
+        every 0G model fails, so the checkpoint holds its safe state."""
+        try:
+            return self.zg.choose(GUARD_MODEL, state, instructions, crit, act, gate)
+        except ZgUnavailable as first:
+            for model, tee in CHAT_FALLBACK:
+                try:
+                    d, meta = self.zg.decide(model, SYSTEM, chat_user, list(crit))
+                except ZgUnavailable:
+                    continue
+                d["fallback"] = {"from": GUARD_MODEL, "why": str(first)[:120], "calibrated": False, "tee_attested": tee}
+                d["reason"] = f"{model} (fallback, {'TEE-attested' if tee else 'not TEE-attested'}, no probability): {d.get('reason', '')}"[:200]
+                return d, meta
+            raise first
+
     # ------------------------------------------------------------ checkpoints
     def check_burst(self):
         s = self.state
@@ -199,8 +216,10 @@ class Agent:
                  + (f", vertical speed {vs:+.1f} m/s." if vs is not None else "."))
         crit = {"start_recovery": "altitude is falling after the peak: the balloon burst, start descent and recovery",
                 "hold": "altitude is still rising or the drop is not clear: keep ascent mode"}
-        d, meta, err = self.ask("burst", lambda: self.zg.choose(GUARD_MODEL, state, "Has the balloon burst? Choose what the payload should do.",
-                                                                crit, "start_recovery", GATE["burst"]))
+        chat_user = (f"{state} Actions: start_recovery (the balloon has burst: switch to descent mode and send the recovery team), "
+                     "hold (still rising, or not certain: keep ascent mode).")
+        d, meta, err = self.ask("burst", lambda: self.gated(state, "Has the balloon burst? Choose what the payload should do.",
+                                                            crit, "start_recovery", GATE["burst"], chat_user))
         if err:
             self.record("burst", inputs, None, None, "held ascent mode, alert raised", err)
             self.to_beacon("SAFE STOP: no 0G"); return
@@ -221,8 +240,9 @@ class Agent:
         crit = {"continue": "the computer is below its temperature limit: keep the camera running",
                 "pause_camera": "the computer is at or above its temperature limit: pause the camera to cool down"}
         # The camera runs only if Vela is sure it is safe; otherwise it pauses (and resumes later).
-        d, meta, err = self.ask("thermal", lambda: self.zg.choose(GUARD_MODEL, state, "Should the payload camera keep running?",
-                                                                  crit, "continue", GATE["thermal"]))
+        chat_user = f"{state} Actions: continue (keep the camera running), pause_camera (pause it to cool down)."
+        d, meta, err = self.ask("thermal", lambda: self.gated(state, "Should the payload camera keep running?",
+                                                              crit, "continue", GATE["thermal"], chat_user))
         if err:
             # Safe state: change nothing (the camera keeps its current setting).
             self.record("thermal", inputs, None, None, "no change, alert raised", err)
