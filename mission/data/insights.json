@@ -447,7 +447,7 @@
   "teeAttested": false,
   "requestId": "chatcmpl-7f079f5b-4d34-9b79-adc4-be1143eec7a6",
   "e2ee": "none",
-  "headline": "Error stayed mostly 1–4 km, with best values late in flight.",
+  "headline": "Error stayed mostly 1\u20134 km, with best values late in flight.",
   "findings": [
    "Prediction error was already below 2 km at T+20 min (1.32 km), but then rose above 2 km from T+30 to T+50 min.",
    "From T+60 min onward, error remained below 2 km, improving to 0.38 km at T+100 min.",
@@ -581,5 +581,293 @@
   "at": "2026-11-06T09:12:38.242Z",
   "entityKey": "0x62b2e2fa635186666b997b28e82fa71d9f1d34f9cb92ddd42b15d56aa4cf35fe",
   "txHash": "0x1e02834fdeb49bf738cff589760bfebeaf999d3f5209d6d3a69445a91cec526e"
+ },
+ {
+  "topic": "jet-stream",
+  "model": "0gm-1.0-35b-a3b",
+  "teeAttested": true,
+  "requestId": "chatcmpl-46e82bfb-abc7-4edb-a7cd-efc8e5050b05",
+  "e2ee": "sealed",
+  "headline": "Jet stream at 12-14km; GFS overestimates there, underestimates at 10-12km",
+  "findings": [
+   "Jet stream core identified in 12-14km band with measured mean 21.7 m/s (max 25.1 m/s).",
+   "Strong winds persist in 10-12km band (measured mean 21.0 m/s).",
+   "Winds decrease significantly above 14km, dropping to 11.5 m/s mean at 14-16km."
+  ],
+  "anomalies": [
+   "GFS model overestimates wind speed at 12-14km (23.8 m/s vs measured 21.7 m/s).",
+   "GFS model underestimates wind speed at 10-12km (17.5 m/s vs measured 21.0 m/s).",
+   "GFS model predicts higher winds at 20-22km (7.3 m/s) where no measured data exists."
+  ],
+  "guard": {
+   "model": "vela-2.0-9b",
+   "requestId": "b731ac2e-b6c9-437b-9058-1c44700e03c1",
+   "teeVerified": true,
+   "verdict": "supported",
+   "flagged": [],
+   "threshold": 0.5,
+   "costUsdMicro": "55"
+  },
+  "arkivQuery": "Wind where flight=hab1-2026-10-31 and dataset=mission-v1 and altM >= 8000 and source = measured | gfs, ordered by altM",
+  "inputs": [
+   "8-10km measured: n=14 mean=17.6 max=20.8 m/s",
+   "10-12km measured: n=11 mean=21.0 max=23.0 m/s",
+   "12-14km measured: n=12 mean=21.7 max=25.1 m/s",
+   "14-16km measured: n=12 mean=11.5 max=14.8 m/s",
+   "16-18km measured: n=11 mean=6.3 max=8.1 m/s",
+   "18-20km measured: n=9 mean=4.3 max=6.6 m/s",
+   "8-10km gfs: n=1 mean=19.3 max=19.3 m/s",
+   "10-12km gfs: n=1 mean=17.5 max=17.5 m/s",
+   "12-14km gfs: n=1 mean=23.8 max=23.8 m/s",
+   "14-16km gfs: n=1 mean=14.0 max=14.0 m/s",
+   "16-18km gfs: n=1 mean=6.5 max=6.5 m/s",
+   "18-20km gfs: n=1 mean=3.3 max=3.3 m/s",
+   "20-22km gfs: n=1 mean=7.3 max=7.3 m/s",
+   "22-24km gfs: n=1 mean=4.8 max=4.8 m/s"
+  ],
+  "at": "2026-11-07T00:47:40.823Z",
+  "entityKey": "0x4bc4765524cca97da79b848502ccbff61547469bb6f0a2268c6d4d2f10e1df30",
+  "txHash": "0xf3d81515da24b5a5f63b6cfa7e414616dfb969cfbb57f592c65916d992bcfb3c"
+ },
+ {
+  "topic": "landing-error",
+  "model": "0gm-1.0-35b-a3b",
+  "teeAttested": true,
+  "requestId": "chatcmpl-5986afb2-97e5-40cf-b817-512ace6703eb",
+  "e2ee": "sealed",
+  "headline": "Prediction error drops below 2km at T+15min, enabling recovery drive.",
+  "findings": [
+   "Initial error at T+0min was 3.84km.",
+   "Error decreased to 3.11km at T+10min.",
+   "First prediction within 2km threshold occurred at T+15min.",
+   "Error reached minimum of 0.38km at T+100min.",
+   "71 of 126 total predictions were within 2km of the real landing."
+  ],
+  "anomalies": [
+   "Error spiked to 4.26km at T+30min despite increasing altitude.",
+   "Error increased to 4.03km at T+50min after improving at T+40min."
+  ],
+  "guard": {
+   "model": "vela-2.0-9b",
+   "requestId": "a0996888-510f-4d05-a36a-45737fbcc3a1",
+   "teeVerified": true,
+   "verdict": "supported",
+   "flagged": [],
+   "threshold": 0.5,
+   "costUsdMicro": "51"
+  },
+  "arkivQuery": "Prediction where flight=hab1-2026-10-31 and dataset=mission-v1 and kind=inflight (all, and errorKm <= 2), ordered by fromFlightS",
+  "inputs": [
+   "T+0min alt=476m measuredBands=0 error=3.84km",
+   "T+10min alt=3222m measuredBands=6 error=3.11km",
+   "T+20min alt=6044m measuredBands=11 error=1.32km",
+   "T+30min alt=8843m measuredBands=17 error=4.26km",
+   "T+40min alt=11448m measuredBands=22 error=3.59km",
+   "T+50min alt=14147m measuredBands=28 error=4.03km",
+   "T+60min alt=16951m measuredBands=33 error=1.14km",
+   "T+70min alt=19557m measuredBands=38 error=1.84km",
+   "T+80min alt=14383m measuredBands=38 error=1.8km",
+   "T+90min alt=10174m measuredBands=38 error=1.42km",
+   "T+100min alt=6554m measuredBands=38 error=0.38km",
+   "T+110min alt=3691m measuredBands=38 error=1.46km",
+   "T+120min alt=1622m measuredBands=38 error=1.06km",
+   "predictions within 2 km of the real landing: 71 of 126; the first from T+15 min"
+  ],
+  "at": "2026-11-07T00:47:58.651Z",
+  "entityKey": "0xce07bd9c74478e2a5147d88d23a3ca7f94dfc15bec9c5b644cd6ec9b8791b91c",
+  "txHash": "0x425e886f66f81af84ce422860ca9adb23bd0bd7da5806f0ec2e72be776ce11ac"
+ },
+ {
+  "topic": "verification",
+  "model": "0gm-1.0-35b-a3b",
+  "teeAttested": true,
+  "requestId": "chatcmpl-ccb2ff5c-5b63-429b-a5de-2cbf789189cc",
+  "e2ee": "sealed",
+  "headline": "Link stable; 60 unsigned frames detected, no active attacks.",
+  "findings": [
+   "High verification success rate: 2087 verified frames out of 2160 total.",
+   "No malicious replay, conflict, or bad signature attacks detected.",
+   "13 fake frames identified, indicating potential spoofing attempts."
+  ],
+  "anomalies": [
+   "60 unsigned frames received, suggesting missing signatures or protocol gaps.",
+   "13 fake frames indicate active or attempted spoofing."
+  ],
+  "guard": {
+   "model": "vela-2.0-9b",
+   "requestId": "d3a6b4dc-a41f-4007-b1e9-15df304cdd05",
+   "teeVerified": true,
+   "verdict": "supported",
+   "flagged": [],
+   "threshold": 0.5,
+   "costUsdMicro": "19"
+  },
+  "arkivQuery": "count(Packet) where flight=hab1-2026-10-31 and verdict=<each>, owned by this ground station",
+  "inputs": [
+   "verified: 2087",
+   "fake: 13",
+   "bad_signature: 0",
+   "unverified: 0",
+   "replay: 0",
+   "conflict: 0",
+   "unsigned: 60"
+  ],
+  "at": "2026-11-07T00:48:17.389Z",
+  "entityKey": "0x50cbcb4877c0a80b5144b5311f712e7286a3e99c257161ae34fa15c27c72f0e1",
+  "txHash": "0xbef4becd6fabce6437cfa6cdd8624a2561331725db4ebc1e339d744bfefa275a"
+ },
+ {
+  "topic": "jet-stream",
+  "model": "0gm-1.0-35b-a3b",
+  "teeAttested": true,
+  "requestId": "chatcmpl-4d26b353-411b-4d3e-a4d0-40bc83631d33",
+  "e2ee": "sealed",
+  "headline": "Jet stream at 12-14km; GFS overestimates there, underestimates at 10-12km",
+  "findings": [
+   "Jet stream core identified in 12-14km band with measured mean 21.7 m/s and max 25.1 m/s.",
+   "Measured winds peak at 12-14km (21.7 m/s) and decrease above 16km.",
+   "GFS model predicts strongest winds in 12-14km band (23.8 m/s).",
+   "Measured winds in 10-12km band are 21.0 m/s, higher than GFS prediction of 17.5 m/s."
+  ],
+  "anomalies": [
+   "GFS overestimates wind speed in 12-14km band by 2.1 m/s (23.8 vs 21.7 m/s).",
+   "GFS underestimates wind speed in 10-12km band by 3.5 m/s (17.5 vs 21.0 m/s).",
+   "GFS underestimates wind speed in 8-10km band by 1.7 m/s (19.3 vs 17.6 m/s).",
+   "GFS predicts winds up to 24km, while measured data stops at 20km."
+  ],
+  "guard": {
+   "model": "vela-2.0-9b",
+   "requestId": "e628f146-cfeb-4345-bda6-580561ce7311",
+   "teeVerified": true,
+   "verdict": "flagged",
+   "flagged": [
+    {
+     "text": "speed",
+     "p": 0.502
+    },
+    {
+     "text": "band by",
+     "p": 0.544
+    },
+    {
+     "text": "vs",
+     "p": 0.517
+    },
+    {
+     "text": "m/s",
+     "p": 0.554
+    }
+   ],
+   "threshold": 0.5,
+   "costUsdMicro": "61"
+  },
+  "arkivQuery": "Wind where flight=hab1-2026-10-31 and dataset=mission-v1 and altM >= 8000 and source = measured | gfs, ordered by altM",
+  "inputs": [
+   "8-10km measured: n=14 mean=17.6 max=20.8 m/s",
+   "10-12km measured: n=11 mean=21.0 max=23.0 m/s",
+   "12-14km measured: n=12 mean=21.7 max=25.1 m/s",
+   "14-16km measured: n=12 mean=11.5 max=14.8 m/s",
+   "16-18km measured: n=11 mean=6.3 max=8.1 m/s",
+   "18-20km measured: n=9 mean=4.3 max=6.6 m/s",
+   "8-10km gfs: n=1 mean=19.3 max=19.3 m/s",
+   "10-12km gfs: n=1 mean=17.5 max=17.5 m/s",
+   "12-14km gfs: n=1 mean=23.8 max=23.8 m/s",
+   "14-16km gfs: n=1 mean=14.0 max=14.0 m/s",
+   "16-18km gfs: n=1 mean=6.5 max=6.5 m/s",
+   "18-20km gfs: n=1 mean=3.3 max=3.3 m/s",
+   "20-22km gfs: n=1 mean=7.3 max=7.3 m/s",
+   "22-24km gfs: n=1 mean=4.8 max=4.8 m/s"
+  ],
+  "at": "2026-11-07T01:00:31.374Z",
+  "entityKey": "0x2dd1ca893aef9b7c0b8749a4bf0dede1d328946bdc6d90479314050ca98bbab3",
+  "txHash": "0x094c0486561cbb83d418f8a655a87bea34a75354ae3d90f10e874908a6144650"
+ },
+ {
+  "topic": "landing-error",
+  "model": "0gm-1.0-35b-a3b",
+  "teeAttested": true,
+  "requestId": "chatcmpl-c1d34487-e522-4753-af72-7b62f09a5ac2",
+  "e2ee": "sealed",
+  "headline": "Prediction error drops below 2km at T+15min, enabling recovery drive.",
+  "findings": [
+   "Initial error at T+0min was 3.84km.",
+   "Error decreased to 3.11km at T+10min.",
+   "First prediction within 2km threshold occurred at T+15min.",
+   "Error reached minimum of 0.38km at T+100min.",
+   "71 of 126 predictions were within 2km of the real landing."
+  ],
+  "anomalies": [
+   "Error spiked to 4.26km at T+30min despite increasing altitude.",
+   "Error increased to 4.03km at T+50min."
+  ],
+  "guard": {
+   "model": "vela-2.0-9b",
+   "requestId": "958fa2e0-dda7-4ddf-a717-9d706fa25324",
+   "teeVerified": true,
+   "verdict": "supported",
+   "flagged": [],
+   "threshold": 0.5,
+   "costUsdMicro": "50"
+  },
+  "arkivQuery": "Prediction where flight=hab1-2026-10-31 and dataset=mission-v1 and kind=inflight (all, and errorKm <= 2), ordered by fromFlightS",
+  "inputs": [
+   "T+0min alt=476m measuredBands=0 error=3.84km",
+   "T+10min alt=3222m measuredBands=6 error=3.11km",
+   "T+20min alt=6044m measuredBands=11 error=1.32km",
+   "T+30min alt=8843m measuredBands=17 error=4.26km",
+   "T+40min alt=11448m measuredBands=22 error=3.59km",
+   "T+50min alt=14147m measuredBands=28 error=4.03km",
+   "T+60min alt=16951m measuredBands=33 error=1.14km",
+   "T+70min alt=19557m measuredBands=38 error=1.84km",
+   "T+80min alt=14383m measuredBands=38 error=1.8km",
+   "T+90min alt=10174m measuredBands=38 error=1.42km",
+   "T+100min alt=6554m measuredBands=38 error=0.38km",
+   "T+110min alt=3691m measuredBands=38 error=1.46km",
+   "T+120min alt=1622m measuredBands=38 error=1.06km",
+   "predictions within 2 km of the real landing: 71 of 126; the first from T+15 min"
+  ],
+  "at": "2026-11-07T01:00:47.646Z",
+  "entityKey": "0xd0cac799be4631068cd2a6152f62431b35bb16f7b14a88bb2ebe3c4189222735",
+  "txHash": "0x5888cbc1cffd4b354ebbbe83fe2c97810ad4d35954fd2af1cd63e87df8d06235"
+ },
+ {
+  "topic": "verification",
+  "model": "0gm-1.0-35b-a3b",
+  "teeAttested": true,
+  "requestId": "chatcmpl-2a8cbd3b-0dbb-4bee-85fa-80b031724785",
+  "e2ee": "sealed",
+  "headline": "Link secure: Verifier caught all 13 attacks; 60 frames unverifiable due to lost sigs.",
+  "findings": [
+   "2087 frames verified as genuine with valid signatures.",
+   "13 forged frames (replay/claim attacks) were detected and rejected.",
+   "0 frames rejected for bad cryptographic signatures.",
+   "0 frames accepted without verification.",
+   "0 replay attacks or sequence conflicts detected."
+  ],
+  "anomalies": [
+   "60 frames are unverified because their signature frames were lost or missed, making them unprovable but not necessarily malicious."
+  ],
+  "guard": {
+   "model": "vela-2.0-9b",
+   "requestId": "57c7a4ce-df41-48bd-bf45-29c797058e82",
+   "teeVerified": true,
+   "verdict": "supported",
+   "flagged": [],
+   "threshold": 0.5,
+   "costUsdMicro": "29"
+  },
+  "arkivQuery": "count(Packet) where flight=hab1-2026-10-31 and verdict=<each>, owned by this ground station",
+  "inputs": [
+   "verified: 2087 (the beacon's signature covers the frame: genuine)",
+   "fake: 13 (a forged frame (a second frame claiming a seq the beacon signed), rejected: each one is an attack the verifier caught)",
+   "bad_signature: 0 (a signature frame whose Ed25519 signature failed: a forged signature, rejected)",
+   "unverified: 0 (accepted with verification switched off)",
+   "replay: 0 (a recorded batch sent again after a beacon restart, rejected)",
+   "conflict: 0 (two signed frames claiming one seq, rejected)",
+   "unsigned: 60 (its signature frame was never heard (lost on the radio, or the beacon restarted first): not an attack, but not provable either)"
+  ],
+  "at": "2026-11-07T01:03:39.355Z",
+  "entityKey": "0xabb5bb49afae547faa871abab995ed5fb2fd8023c60a83152ccf91c56a68b8a6",
+  "txHash": "0x531746e989281660807b9f6f45c6c311945504da4604469ccab1ddcb53f94e59"
  }
 ]

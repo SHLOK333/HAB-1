@@ -61,9 +61,16 @@ const TOPICS = {
   verification: async () => {
     const q = "count(Packet) where flight=hab1-2026-10-31 and verdict=<each>, owned by this ground station"
     const digest = []
-    for (const verdict of ["verified", "fake", "bad_signature", "unverified", "replay", "conflict", "unsigned"])   // attribute filter: verdict
-      digest.push(`${verdict}: ${await reader.count().from(Packet).where(and(eq("flight", FLIGHT), eq("verdict", verdict))).ownedBy(account.address).fetch()}`)
-    return { q, n: digest.length, digest, ask: "These are counts of received telemetry frames by verification verdict. What do they say about the link and about attacks on it?" }
+    // each verdict with what it means, so the model cannot read a caught attack as "no attack"
+    const MEANS = { verified: "the beacon's signature covers the frame: genuine",
+      fake: "a forged frame (a second frame claiming a seq the beacon signed), rejected: each one is an attack the verifier caught",
+      bad_signature: "a signature frame whose Ed25519 signature failed: a forged signature, rejected",
+      unverified: "accepted with verification switched off", replay: "a recorded batch sent again after a beacon restart, rejected",
+      conflict: "two signed frames claiming one seq, rejected",
+      unsigned: "its signature frame was never heard (lost on the radio, or the beacon restarted first): not an attack, but not provable either" }
+    for (const [verdict, means] of Object.entries(MEANS))   // attribute filter: verdict
+      digest.push(`${verdict}: ${await reader.count().from(Packet).where(and(eq("flight", FLIGHT), eq("verdict", verdict))).ownedBy(account.address).fetch()} (${means})`)
+    return { q, n: digest.length, digest, ask: "These are counts of received telemetry frames by verification verdict. What do they say about the link, and about attacks on it and whether the verifier caught them?" }
   },
 }
 
@@ -90,7 +97,7 @@ async function pickModel() {
 }
 async function ask0G(model, topic, d) {
   const body = { model, temperature: 0, max_tokens: OPTS[model]?.max_tokens ?? 500, chat_template_kwargs: { enable_thinking: false }, messages: [
-    { role: "system", content: "You analyse high-altitude balloon telemetry for a recovery team. Answer only from the data given. Reply as JSON: {\"headline\": \"<= 100 characters\", \"findings\": [\"...\"], \"anomalies\": [\"...\"]}" },
+    { role: "system", content: "You analyse high-altitude balloon telemetry for a recovery team. Answer only from the data given; the headline must agree with the findings. Reply as JSON: {\"headline\": \"<= 100 characters\", \"findings\": [\"...\"], \"anomalies\": [\"...\"]}" },
     { role: "user", content: `Topic: ${topic}\nData read from Arkiv (${d.q}), ${d.n} entities:\n${d.digest.join("\n")}\n\nQuestion: ${d.ask}` }] }
   const r = await fetch(`${ZG}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${KEY}`, "content-type": "application/json", ...OPTS[model]?.headers }, body: JSON.stringify(body) })
   const j = await r.json()
