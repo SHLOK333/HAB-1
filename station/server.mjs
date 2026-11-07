@@ -413,7 +413,7 @@ http.createServer((req, res) => {
   }
   if (url.pathname.startsWith("/api/cmd/") && req.method === "POST") {
     const name = url.pathname.slice(9)
-    if (!ACTIONS[name]) { res.writeHead(404); return res.end() }
+    if (!ACTIONS[name] && name !== "attack") { res.writeHead(404); return res.end() }   // attack goes over LoRa (attackOverLora)
     let body = ""; req.on("data", c => (body += c)); req.on("end", () => {
       let b = {}; try { b = JSON.parse(body || "{}") } catch {}
       const r = runAction(name, b); res.writeHead(r.ok ? 202 : 409, { "content-type": "application/json" }); res.end(JSON.stringify(r))
