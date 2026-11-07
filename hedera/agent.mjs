@@ -7,6 +7,9 @@
 //   - total budget: stops paying once BUDGET tinybar is spent, and says so
 //   - merchant allowlist: pays only the ground station's account (x402 policy)
 //
+// It finds what to buy itself: the seller lists its paid resources at /.well-known/x402; the
+// agent picks the one that sells wind, and checks the price and the payee before any payment.
+//
 //   node --env-file=../.env agent.mjs [alt_m ...]
 import { x402Client, x402HTTPClient } from "@x402/core/client"
 import { createClientHederaSigner } from "@x402/hedera"
@@ -49,10 +52,22 @@ async function buy(path) {
   return { status: paid.status, body }
 }
 
+// Find the endpoint: read the seller's catalog and pick the resource that sells wind
+async function discover() {
+  const cat = await (await fetch(`${BASE}/.well-known/x402`)).json()
+  const [route, info] = Object.entries(cat.routes ?? {}).find(([, v]) => /wind/i.test(v.description)) ?? []
+  if (!route) throw new Error(`${BASE} lists no resource that sells wind`)
+  if (cat.payTo !== MERCHANT) throw new Error(`the seller wants payment to ${cat.payTo}, which is not on this agent's allowlist`)
+  if (Number(info.price_tinybar) > MAX_PER_PAYMENT) throw new Error(`${route} costs ${info.price_tinybar} tinybar, over this agent's cap of ${MAX_PER_PAYMENT}`)
+  console.log(`found ${route} at ${BASE}: "${info.description}", ${info.price_tinybar} tinybar, paid to ${cat.payTo} on ${cat.network} via ${cat.facilitator}`)
+  return route.split(" ")[1]
+}
+const windPath = await discover()
+
 const alts = process.argv.slice(2).map(Number).filter(Boolean)
 for (const alt of alts.length ? alts : [5000, 10000, 15000, 18000, 19000, 3000, 8000]) {
   const t0 = Date.now()
-  const r = await buy(`/v1/wind?alt_m=${alt}`)
+  const r = await buy(`${windPath}?alt_m=${alt}`)
   const b = r.body
   if (r.status === 200) {
     const tx = b.payment?.tx

@@ -3,7 +3,7 @@
 //
 //   GET /v1/wind?alt_m=15000   0.01 HBAR   wind at that height, with the beacon-signed frames behind it
 //   GET /v1/flight/latest      0.005 HBAR  newest verified position, with its signed frame
-//   GET /                      free        what is on sale and the prices
+//   GET /.well-known/x402      free        what is on sale and the prices (also at /), so an agent can find it
 //
 // The facilitator (Blocky402 by default) verifies the payer's signed transfer, pays the
 // network fee and submits it; data is returned only after settlement succeeds. Each
@@ -80,9 +80,9 @@ function produce(url) {
 http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`)
   try {
-    if (url.pathname === "/") {
+    if (url.pathname === "/" || url.pathname === "/.well-known/x402") {
       return send(res, 200, {}, { network: NETWORK, payTo: PAY_TO, facilitator: FACILITATOR, asset: "HBAR (0.0.0), amounts in tinybars",
-        routes: Object.fromEntries(Object.entries(routes).map(([k, v]) => [k, { price_tinybar: v.accepts.price.amount, description: v.description }])) })
+        routes: Object.fromEntries(Object.entries(routes).map(([k, v]) => [k, { price_tinybar: v.accepts.price.amount, description: v.description, mimeType: v.mimeType }])) })
     }
     const ctx = { adapter: adapter(req, url), path: url.pathname, method: req.method,
                   paymentHeader: req.headers["payment-signature"] ?? req.headers["x-payment"] }
