@@ -33,5 +33,13 @@
    `dec` fields work (our map's box query), but we found them in the SDK's type
    definitions, not in the docs.
 
+8. **No browser build of the SDK.** Our site imports `@arkiv-network/sdk` 1.0.0 from esm.sh.
+   A cold first load makes 211 module requests (measured 7 Nov 2026), and two copies of
+   viem arrive: the app's pinned `viem@2.57.14`, and the `viem@^2.0.0` the SDK asks for,
+   which esm.sh resolves separately. Together with several queries at start, the first load
+   once took more than our 20 s timeout. Expected: a single prebuilt ESM bundle we can pin.
+   Reproduce: `import("https://esm.sh/@arkiv-network/sdk@1.0.0")` in a fresh browser profile
+   and count the requests in the network tab. We added a retry on our side.
+
 What worked well: the schema API (typed values, `defineSchema`, compile-time checks
 on `where`) and `executeBatch` writing 6 or 7 entities in one transaction.

@@ -12,8 +12,14 @@
    heard it. With Postgres, our server writes every row and readers have to trust
    that we copied each receiver honestly. On Arkiv a receiver signs its own rows
    and nobody else can edit them.
-3. **Re-checking.** Each packet keeps the 28 raw bytes as heard. Anyone can take the
-   beacon's public key and re-run the signature check themselves, without asking us.
+3. **Re-checking.** Each packet keeps the 28 raw bytes as heard, and each signature frame
+   its 100 raw bytes (`boscon.hab.sig`). Anyone can take the beacon's public key and re-run
+   the signature check from Arkiv alone, without asking us: our [MCP server](../mcp/README.md)
+   does exactly that, and for session `live-11062318` finds 105 frames verified, all 3
+   forged frames caught, and no receiver verdict that fails the check.
+4. **Live without us.** The public site ([hab-1.vercel.app](https://hab-1.vercel.app)) has
+   no backend: it follows the newest session straight from Arkiv every 20 s. With Postgres it
+   would need our API to be up.
 
 ## What we kept off Arkiv, and why
 
