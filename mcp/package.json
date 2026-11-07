@@ -1,0 +1,21 @@
+{
+  "name": "hab1-arkiv-mcp",
+  "version": "1.0.0",
+  "description": "HAB-1 flight data over MCP, read from Arkiv and signature-checked on your own machine",
+  "type": "module",
+  "bin": {
+    "hab1-arkiv-mcp": "server.mjs"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node selftest.mjs"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@arkiv-network/sdk": "1.0.0",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "viem": "2.57.14",
+    "zod": "4.6.7"
+  }
+}

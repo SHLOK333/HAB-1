@@ -1,0 +1,35 @@
+{
+ "beaconKey": "f7bf12e3c6b832c7daec9d7b21474d129183b2c7d1e0aafc1c223395c2d6d4e3",
+ "sig": "b30c000000061a006a7aa6016ca696e4c0546b35bf99b5cdaa2c926f5388fddec4d9aa7833c80a65c14b191a49abc72598c12d3deefedd7564f118e7c9fa9135e57aaeb7636baaffeba1554a67143c7226f04eab71ff2d28638a2d5f529aa6dc0ec85f0d",
+ "boot": 26,
+ "genuine": [
+  {
+   "seq": 12,
+   "frame": "b20c000000d40dcd74b40aad59552d2941ae034cf09727c70807f7bf"
+  },
+  {
+   "seq": 13,
+   "frame": "b20d000000000f24d5b50a483b572d2d46eb029ef19727ca0807f7bf"
+  },
+  {
+   "seq": 14,
+   "frame": "b20e0000002c1056e4b40a4c2a582d584b5302a5f49727cb0807f7bf"
+  },
+  {
+   "seq": 15,
+   "frame": "b20f000000581161f8b30a4f92582d57433903f2eb9727cf0807f7bf"
+  },
+  {
+   "seq": 16,
+   "frame": "b2100000008412c152b40a5df45b2df4391305b3ec9727d30807f7bf"
+  },
+  {
+   "seq": 17,
+   "frame": "b211000000b0133d92b80af3ca612d70316d0749f09727d30807f7bf"
+  }
+ ],
+ "fake": {
+  "seq": 12,
+  "frame": "b20c000000d40dada7dd0a4d763e2d0000ae034cf09727c70807f7bf"
+ }
+}
