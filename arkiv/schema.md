@@ -1,8 +1,8 @@
 # Arkiv schema
 
-Two entity types, defined once in `arkiv/schema.mjs` and used by the publisher
-(`arkiv/publish.mjs`), the command-line reader (`arkiv/query.mjs`) and the public
-map (`web/index.html`).
+Three entity types for the radio link, defined once in `arkiv/schema.mjs` and used by the
+publisher (`arkiv/publish.mjs`), the command-line reader (`arkiv/query.mjs`), the public map
+(`web/index.html`) and the MCP server (`mcp/`, which keeps a copy).
 
 ## `boscon.hab.packet`: one radio frame, as one receiver heard it
 
@@ -24,6 +24,25 @@ map (`web/index.html`).
 write, edit or delete its own packets, so each one vouches only for what it heard.
 **Expiry:** 7 days. A live position is useful during the flight and the recovery;
 after that the session record and the raw logs carry the history.
+
+## `boscon.hab.sig`: one signature frame, as one receiver heard it
+
+| Field | Type | Indexed | Meaning |
+|---|---|---|---|
+| `flight`, `run` | str | yes | As above |
+| `beaconKey` | str | yes | The key the receiver checked it with (re-check with your own copy) |
+| `firstSeq` | u64 | yes | The first of the 6 data frames it covers |
+| `boot` | i32 | yes | The beacon's boot counter; `(boot, firstSeq)` only goes up |
+| `valid` | str | yes | `true` or `false`: the receiver's own check of the signature |
+| `receiver` | str | no | Receiver name |
+| `rssi`, `snr` | dec | no | Signal as received |
+| `frame` | bytes | no | The 100 raw bytes: salt, 6 salted hashes, Ed25519 signature |
+
+With the packets' raw frames, this is everything needed to redo the verifier's check without
+trusting the receiver: the signature over bytes 0..35 with the beacon's key, then each data
+frame's `SHA-256(salt + frame)`. [`mcp/`](../mcp/README.md) does exactly that. Written since 7 Nov
+2026, and added for the sessions of 6 and 7 Nov from the verifier logs (`publish.mjs --sigs-only`).
+**Owner** and **expiry:** as for packets.
 
 ## `boscon.hab.run`: one session
 

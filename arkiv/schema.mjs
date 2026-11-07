@@ -2,6 +2,10 @@
 //
 // Packet: one frame one receiver heard, with the verifier's verdict. Owned by the
 // receiver's wallet, so every receiver vouches only for what it heard itself.
+// Sig: one SIG frame one receiver heard: the beacon's Ed25519 signature over 6 data frames.
+// With the Packet frames it lets anyone redo the verifier's check without trusting us
+// (mcp/server.mjs does): the signature over bytes 0..35 with the beacon's key, then each
+// data frame's SHA-256(salt + frame) against the hashes the signature covers.
 // Run: one replay session, so the map can list sessions and pick the latest.
 import { bytes, defineSchema, dec, i32, str, u64 } from "@arkiv-network/sdk/schema"
 
@@ -23,6 +27,19 @@ export const Packet = defineSchema("boscon.hab.packet", {
   frame:     bytes(),           // the 28 raw bytes as heard, so anyone can re-check them
   livePa:    dec().optional(),  // live outside pressure (the payload Pi's MS5611), Pa; absent if none
   liveC:     dec().optional(),  // live outside temperature, C
+})
+
+export const Sig = defineSchema("boscon.hab.sig", {
+  flight:    str().indexed(),
+  run:       str().indexed(),
+  beaconKey: str().indexed(),   // the key the receiver checked it with; re-check with your own copy
+  firstSeq:  u64().indexed(),   // the first data frame it covers
+  boot:      i32().indexed(),   // the beacon's boot counter: (boot, firstSeq) only goes up
+  valid:     str().indexed(),   // "true" | "false": the receiver's own check of the signature
+  receiver:  str(),
+  rssi:      dec(),
+  snr:       dec(),
+  frame:     bytes(),           // the 100 raw bytes as heard
 })
 
 export const Run = defineSchema("boscon.hab.run", {

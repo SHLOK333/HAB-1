@@ -1,8 +1,10 @@
 #!/usr/bin/env node
-// Publish the verifier's verdicts to Arkiv as Packet entities, owned by this receiver.
+// Publish the verifier's verdicts to Arkiv as Packet entities, and the SIG frames it heard as
+// Sig entities, owned by this receiver. Together they let anyone redo the signature check.
 //
 //   node --env-file=../.env publish.mjs                 # follow the newest verifier log
 //   node --env-file=../.env publish.mjs --receiver sim1 --log <file> --from-start
+//   node --env-file=../.env publish.mjs --log <file> --run <run> --from-start --sigs-only   # add a session's SIG frames
 //
 // Each receiver signs its writes with its own wallet (ARKIV_GROUND_PRIVATE_KEY,
 // ARKIV_SIM_RX1_PRIVATE_KEY, ...), so the map can show who heard what.
@@ -13,7 +15,7 @@ import { rabdi } from "@arkiv-network/sdk/chains"
 import { bytes, dec, i32, str, u64 } from "@arkiv-network/sdk/schema"
 import { http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
-import { FLIGHT, Packet, PACKET_DAYS, Run, RUN_DAYS, VERDICTS } from "./schema.mjs"
+import { FLIGHT, Packet, PACKET_DAYS, Run, RUN_DAYS, Sig, VERDICTS } from "./schema.mjs"
 
 const here = path.dirname(new URL(import.meta.url).pathname)
 const arg = (name, def) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : def }
@@ -22,7 +24,8 @@ const keyVar = { ground: "ARKIV_GROUND_PRIVATE_KEY", sim1: "ARKIV_SIM_RX1_PRIVAT
 if (!keyVar || !process.env[keyVar]) throw new Error(`no private key for receiver ${receiver} in .env`)
 const logDir = path.join(here, "..", "ground", "log")
 const logFile = arg("--log") ?? path.join(logDir, fs.readdirSync(logDir).filter(f => f.startsWith("verifier-")).sort().at(-1))
-const fromStart = process.argv.includes("--from-start")
+const fromStart = process.argv.includes("--from-start"), sigsOnly = process.argv.includes("--sigs-only")
+const pinnedKey = fs.readFileSync(path.join(here, "..", "ground", "beacon_pubkey.hex"), "utf8").trim()
 const runName = arg("--run", "demo-" + new Date().toISOString().slice(0, 16).replace(/[-:]/g, ""))
 
 const account = privateKeyToAccount(process.env[keyVar])
@@ -33,7 +36,7 @@ fs.mkdirSync(path.dirname(outLog), { recursive: true })
 
 console.log(`receiver ${receiver} ${account.address}\nrun ${runName}\nfollowing ${logFile}${fromStart ? " from the start" : ""}`)
 
-let runCreated = false
+let runCreated = sigsOnly   // adding to a session that already has its Run
 async function ensureRun(beaconKey) {
   if (runCreated) return
   const { entityKey, txHash } = await wallet.createEntity(Run, {
@@ -47,6 +50,14 @@ async function ensureRun(beaconKey) {
 }
 
 function toCreate(e) {
+  if (e.ev === "sig") return {
+    schema: Sig,
+    values: {
+      flight: FLIGHT, run: runName, beaconKey: pinnedKey, firstSeq: u64(e.first), boot: i32(e.boot), valid: String(e.valid),
+      receiver, rssi: dec(e.rssi.toFixed(1)), snr: dec(e.snr.toFixed(1)), frame: bytes(Buffer.from(e.hex, "hex")),
+    },
+    expiration: ExpirationTime.fromDays(PACKET_DAYS),
+  }
   return {
     schema: Packet,
     values: {
@@ -70,25 +81,27 @@ function readNew() {
   const lines = (partial + buf.toString()).split("\n")
   partial = lines.pop()
   for (const l of lines) {
-    try { const e = JSON.parse(l); if (e.ev === "verdict") queue.push(e) } catch {}
+    try { const e = JSON.parse(l); if ((e.ev === "verdict" && !sigsOnly) || e.ev === "sig") queue.push(e) } catch {}
   }
 }
 
 let busy = false
 async function flush() {
+  if (sigsOnly && !busy && queue.length === 0) { console.log("all SIG frames in the log published"); process.exit(0) }   // a backfill ends when the log is done
   if (busy || queue.length === 0) return
   busy = true
   const batch = queue.splice(0, 20)
   try {
-    await ensureRun(batch[0].beacon_key)
+    await ensureRun(batch.find(e => e.beacon_key)?.beacon_key ?? pinnedKey)
     const t0 = Date.now()
     const { txHash, createdEntities } = await wallet.executeBatch({ creates: batch.map(toCreate) })
     const keys = createdEntities ?? []
     batch.forEach((e, i) => {
-      const rec = { seq: e.seq, verdict: VERDICTS[e.verdict] ?? e.verdict, entityKey: keys[i], txHash, receiver, run: runName }
+      const rec = e.ev === "sig" ? { sig: e.first, boot: e.boot, entityKey: keys[i], txHash, receiver, run: runName }
+        : { seq: e.seq, verdict: VERDICTS[e.verdict] ?? e.verdict, entityKey: keys[i], txHash, receiver, run: runName }
       fs.appendFileSync(outLog, JSON.stringify(rec) + "\n")
     })
-    console.log(`published ${batch.length}: ${batch.map(e => `${e.seq}:${VERDICTS[e.verdict] ?? e.verdict}`).join(" ")}  tx ${txHash}  ${Date.now() - t0} ms`)
+    console.log(`published ${batch.length}: ${batch.map(e => e.ev === "sig" ? `sig${e.first}/boot${e.boot}` : `${e.seq}:${VERDICTS[e.verdict] ?? e.verdict}`).join(" ")}  tx ${txHash}  ${Date.now() - t0} ms`)
   } catch (err) {
     queue.unshift(...batch)
     console.log(`publish failed, will retry: ${err.shortMessage ?? err.message}`)
