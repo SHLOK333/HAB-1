@@ -1,4 +1,4 @@
-# HAB-1 Edge Node (working name)
+# HAB-1 Edge Node
 
 A high-altitude balloon payload that **decides on board, proves what it saw, and sells what
 it computes**, over a radio link of a few hundred bytes a minute.
@@ -21,7 +21,7 @@ you check the claims yourself, in your browser:
 | Page | What you can check there |
 |---|---|
 | **0G** (`#/zerog`) | how each payload decision is made (Vela 2.0 9B, Laya, gates); every signed decision with its 0G request ID; **Verify in this browser** reads the Pi's key and the latest log root from EpisodeRegistry on 0G Chain and checks all the log's Ed25519 signatures |
-| **Hedera** (`#/hedera`) | the three ways the balloon's wind is paid for (x402 over HTTP, radio voucher, x402 over LoRa); every sale on the HCS audit topic and the account balances, read live from the mirror node |
+| **Hedera** (`#/hedera`) | every sale on the HCS audit topic and the account balances, read live from the mirror node |
 | **Arkiv** (`#/arkiv`) | attribute-filter queries against Arkiv from your browser, the six entity types and their indexed attributes, and the batches written this session |
 | **Protocol** (`#/protocol`) | each LoRa frame as it is received, byte by byte; the browser recomputes the salted hashes and checks the beacon's signature itself |
 | **Flights** (`#/flights`) | HAB-1 next to Tawhiri simulations of it, a new forecast for launching again, and the balloons over India this week (SondeHub); **simulate your own flight** (site, time, ascent, burst, descent) or a 5-balloon fleet, and play a **simulated LoRa mesh** over it in which balloons relay each other's frames and pay for each relay with x402 |
@@ -247,8 +247,9 @@ to 0G Storage and its root to an EpisodeRegistry contract on 0G Chain, so anyone
 what the machine decided and why. If 0G is unreachable it never invents a decision: it holds
 a safe state, keeps every frame and tells the beacon." Show: a decision with a request ID,
 the safe stop, the storage root and registry transaction, and a tampered record failing.
-*Remove 0G and the payload cannot make its checkpoint decisions.* (Today every checkpoint
-safe-stops: real 0G decisions need the Private Computer key.)
+*Remove 0G and the payload cannot make its checkpoint decisions.* The stored log `retest-1106`
+(registry entry #1) holds 66 0G decisions, each with its request ID, and 33 safe stops from
+while the Pi was offline.
 
 **Hedera: x402, AI Agents That Pay.** "The balloon's data has buyers: wind at height is what
 the next launch, a drone or a weather model needs. Our ground station sells it per request
@@ -944,10 +945,10 @@ a longer altitude history in the state or a higher gate.
 | Requirement | How it is met | State |
 |---|---|---|
 | An x402-protected endpoint settling on Hedera | `hedera/server.mjs`, HBAR on `hedera:testnet`, via the x402.org facilitator | **verified** |
-| An agent that completes a paid request with no human approving | `hedera/agent.mjs` | **verified, 3 payments** |
+| An agent that finds the endpoint and completes a paid request with no human approving | `hedera/agent.mjs` reads the seller's catalog at `/.well-known/x402`, picks the resource that sells wind, checks its price against its cap and the payee against its allowlist, then pays | **verified, 5 payments** (the last two on 7 Nov 2026, found through the catalog) |
 | A settled payment's transaction ID | below | **verified on the mirror node** |
 | Extra: spending controls | per-payment cap, total budget, merchant allowlist | **verified: the budget cap refused** |
-| Extra: an HCS topic as an audit log | one message per settlement | **verified, messages 1 to 3** |
+| Extra: an HCS topic as an audit log | one message per settlement, written by the seller only | **verified, messages 1 to 10** |
 | Extra: standard x402, facilitator swapped by one setting | the same endpoint paid through Blocky402 instead of x402.org (6 Nov 2026, new deployment): [`0.0.7162784@1793936250.637071719`](https://hashscan.io/testnet/transaction/0.0.7162784-1793936250-637071719), `SUCCESS`, 0.01 HBAR `0.0.11326830` → `0.0.11327348`, fee 292,001 tinybar paid by Blocky402's `0.0.7162784`, HCS #5; the buyer's proof check passed for frames 709 and 710 | **verified** |
 | Extra: x402 itself over LoRa | the 402, the payment and the settlement between two radio boards; the payment built and signed on the ESP32 and settled by the x402.org facilitator before the data is released | **verified, HCS #12** |
 | Extra: machine-to-machine payment with no internet | a radio voucher between the two boards, settled from an HBAR allowance signed by the buyer board's own key | **verified, voucher 4, HCS #8** |
@@ -969,6 +970,8 @@ a longer altitude history in the state or a higher gate.
 |---|---|---|---|
 | wind at 15,000 m | 12.8 m/s from 260 degrees (band 14,566 m) | [`0.0.9185802@1793917447.840408407`](https://hashscan.io/testnet/transaction/0.0.9185802-1793917447-840408407) | #1 |
 | wind at 12,000 m | bought from the ground station console | [`0.0.9185802@1793918856.721090269`](https://hashscan.io/testnet/transaction/0.0.9185802-1793918856-721090269) | #2 |
+| wind at 15,000 m (7 Nov 2026, endpoint found through `/.well-known/x402`) | 12.8 m/s from 260 degrees (band 14,566 m) | [`0.0.9185802@1794018067.032077285`](https://hashscan.io/testnet/transaction/0.0.9185802-1794018067-032077285) | #9 |
+| wind at 10,000 m (same run) | 19.1 m/s from 222 degrees (band 9,547 m) | [`0.0.9185802@1794018078.863138219`](https://hashscan.io/testnet/transaction/0.0.9185802-1794018078-863138219) | #10 |
 
 Each paid request took 3.7 to 8.5 s end to end (measured). With a budget for 1.5 payments the
 agent paid once and refused the next two ("1000000 more would exceed it").
@@ -980,7 +983,10 @@ request at 30,000 m got `{"error": "no verified wind data within 1500 m of that 
 "charged": false}`, and the payer's balance stayed at 423,201,154 tinybar (mirror node, before
 and after).
 
-**Payment flow:** the agent asks for `/v1/wind`; the server answers **402** with the price,
+**Payment flow:** the agent reads the seller's free catalog at `/.well-known/x402` (network,
+`payTo`, facilitator, each paid route with its price and description) and picks the route that
+sells wind; it refuses a seller whose `payTo` is not on its allowlist or whose price is over its
+cap. It then asks for `/v1/wind`; the server answers **402** with the price,
 asset (`0.0.0`, HBAR), `payTo` and the facilitator's fee payer; the agent's x402 client checks
 its spending controls, signs a transfer, and retries with the `PAYMENT-SIGNATURE` header; the
 server asks the facilitator to verify and settle; only after settlement succeeds does it return
@@ -1004,8 +1010,9 @@ it, so it is standard Ed25519.
 **Writer wallets (this deployment, 6 Nov 2026):** ground receiver `0x532cCE61F117A394D595E9fb7069f4D6CE3Bb047`;
 simulated receivers `0xAE1796225FFdf537eF8122dA92ACDE3D1aE9b363` and
 `0xeeeB58826006087868079C27159838a3B694721e` (they republish the ground's verified frames
-under their own wallets, labelled simulated on the map). Every reader in this repo filters by these owners,
-so entities from earlier wallets are never shown.
+under their own wallets, labelled simulated on the map). The site and the query script filter by
+these owners, so entities from earlier wallets are never shown. The MCP server reads every
+receiver, and checks each one's frames against the beacon's signatures itself.
 
 **On the map:** click anywhere to list every packet heard within about 5 km, from every
 session and receiver (a box query on the indexed `lat` and `lon`, about 0.5 s, no server of
@@ -1017,9 +1024,9 @@ ours). Each frame is one point listing every receiver and wallet that vouched fo
 cd arkiv && npm install && node query.mjs retest-1106
 ```
 
-**Sessions written so far** (new wallets, 6 Nov 2026; every query is filtered with
-`ownedBy` to the ground receiver `0x532cCE61F117A394D595E9fb7069f4D6CE3Bb047`, so data
-from the old wallets never appears): `live-1106` and `retest-1106`. `retest-1106` held 234
+**On Arkiv now** (ground wallet, read 7 Nov 2026): 11 sessions (`live-1106` to `live-11062318`),
+2,160 frames (2,087 verified, 13 forged and rejected), 372 signature frames, 144 winds,
+128 predictions, 33 public balloon positions, 22 0G analyses. `retest-1106` held 234
 packets when queried during the run, each verified frame heard by the receiver; the first
 batch of the session is [`0x4fce71be454304b237dcad20c66998f43a091505cea81be24bcbab1eedca353c`](https://rabdi.explorer.arkiv.network/tx/0x4fce71be454304b237dcad20c66998f43a091505cea81be24bcbab1eedca353c),
 and batches of six frames land every 70 to 80 s, 5 to 12 s after they are sent (the console's
@@ -1221,15 +1228,16 @@ no delivery was heard for any of them, and the settler has nothing to charge.)
 |---|---|
 | Range | tested at bench distance only; no uplink to a balloon at altitude has been measured |
 | Flight use | signing, the uplink and the tap-line messages are not in HAB-1's flight firmware; a next flight needs that firmware work and an airtime check |
-| Uplink payload | the uplink carries acks and radio-sale vouchers; x402 requests over HTTP are answered from verified data on the ground |
+| Uplink payload | the uplink carries acks, radio-sale vouchers and x402 frames, 0G decisions for the Pi (27 bytes with an HMAC tag) and the demo's forged-frame command; x402 requests over HTTP are answered from verified data on the ground |
 | 0G Compute Network directly | needs about 4 testnet 0G (3 for the ledger, 1 per provider); the deployer wallet has 0.497 |
 | More than two radios | the radio sales run between the two boards we have; a relay through a third balloon needs a third LoRa board |
 | x402 over the radio, far away | needs a ground station in range within 120 s (a Hedera transaction's valid window); the voucher mode covers longer gaps |
 | Simulated Arkiv receivers | funded, not used |
-| The map on storage we do not control (Swarm) | not done; the page is served from the laptop |
+| The site on storage we do not control (Swarm) | not done; the site is on Vercel ([hab-1.vercel.app](https://hab-1.vercel.app)) and reads Arkiv directly |
 | Public live demo link | [hab-1.vercel.app](https://hab-1.vercel.app), deployed 7 Nov 2026 |
 | Demo video | not done |
-| Licence file | not added yet; an open-source licence is required by the tracks |
+| Licence | MIT, [`LICENSE`](LICENSE) |
+| Team names and contacts (Telegram, X) | to add |
 | Git history | on GitHub: https://github.com/SHLOK333/HAB-1 |
 
 ---
@@ -1241,15 +1249,20 @@ firmware/hab_node/   beacon and ground firmware (frames.h, hedera_body.h, net.h,
 probes/link_probe/   the first radio and signing probe
 ground/              verifier.py, cmd.py, nodes.py, heltec.py, beacon_pubkey.hex
 arkiv/               publish.mjs, query.mjs, schema.mjs and the Arkiv judging files
-web/                 index.html, the public map
+web/                 index.html, the first public map
+site/                the console: index.html, console.js, pages.js, dock.js (static; hab-1.vercel.app)
+station/             server.mjs, the ground-station bridge behind the live console (localhost:8090)
+mission/             the flight as data: predictions, winds, analytics.mjs (0G over Arkiv)
+mcp/                 the MCP server: the flight from Arkiv, signatures re-checked locally
 hedera/              server.mjs, agent.mjs, flightdata.mjs, check_proof.mjs, setup.mjs, keys.mjs,
                      radio_setup.mjs, radio_settle.mjs, radio_x402.mjs, hedera_body.mjs
 pi/                  agent.py, zg.py, sensors.py, uart_blast.py
-zg/                  EpisodeRegistry.sol, deploy.mjs, upload.mjs
+zg/                  EpisodeRegistry.sol, deploy.mjs, upload.mjs, prove.mjs, radio_brain.mjs (0G over LoRa)
 tools/               make_replay.py, pi.sh
 CHANGING.md          how to change, redeploy and run from another laptop
 DEMO.md              running the demo
 .env.example         every variable the project reads
+LICENSE              MIT
 ```
 
 ---
