@@ -15,6 +15,8 @@ Partner tracks: **0G** (Physical AI), **Hedera** (x402 agents that pay), **Arkiv
 
 ### For judges: where to look
 
+**[PARTNERS.md](PARTNERS.md): why we use 0G, Hedera and Arkiv, with a link to every line of code where each one is used.**
+
 The ground-station console has one page per track. Each page reads public sources and lets
 you check the claims yourself, in your browser:
 
