@@ -400,7 +400,7 @@ async function loadForecast() {
   } catch (err) { S.forecast = P.forecast?.track ? { track: P.forecast.track.map(p => [p.lon, p.lat, p.alt]), note: `SondeHub did not answer (${err.message}); showing the forecast saved ${P.forecast.launch.slice(0, 16)}.` } : null }
   log("model", `Tawhiri forecast for a launch from the pad tonight <span class="mono">${esc(S.forecast?.note ?? "unavailable")}</span>`)
 }
-async function loadInsights() {
+async function loadInsights(retries = 2) {
   try {
     const a = await timeout(arkiv(), 15000), { and, eq, desc } = a.q
     const res = await timeout(a.client.select({ topic: true, model: true, teeAttested: true, requestId: true, headline: true, createdAt: true, guardModel: true, guardVerdict: true, guardRequestId: true, $key: true })
@@ -408,7 +408,11 @@ async function loadInsights() {
     const rows = res.entities.map(val)
     S.insightsHtml = rows.length ? `<ul class="list">${rows.map(r => `<li><span><span class="dot" data-st="${r.teeAttested === "true" ? "ok" : "warn"}"></span> <b>${esc(r.headline)}</b></span><span class="mono">${esc(r.topic)} · ${esc(r.model)} · ${r.teeAttested === "true" ? "TEE-attested" : "not attested"}</span><span class="mono">0G ${esc(r.requestId)}</span>${r.guardVerdict ? `<span class="mono ${r.guardVerdict === "supported" ? "ok" : "warn"}">claims checked by ${esc(r.guardModel)}: ${r.guardVerdict === "supported" ? "all supported by the Arkiv data" : "some claims NOT supported"} · 0G ${esc(r.guardRequestId)}</span>` : ""}<span class="mono">Arkiv ${short(r.$key)} · ${new Date(Number(r.createdAt) * 1000).toISOString().slice(0, 16).replace("T", " ")} UTC</span></li>`).join("")}</ul>`
       : `<p class="empty">No analysis stored yet. Run 0G analysis in Operations.</p>`
-  } catch (e) { S.insightsHtml = `<p class="empty">Arkiv did not answer (${esc(e.message)}).</p>` }
+  } catch (e) {
+    // a slow first load (the SDK modules and several queries at once) can time out: try again before giving up
+    if (retries > 0) { if ($("zg-ins")) $("zg-ins").innerHTML = `<p class="status">Arkiv is slow to answer; trying again…</p>`; return void setTimeout(() => loadInsights(retries - 1), 3000) }
+    S.insightsHtml = `<p class="empty">Arkiv did not answer (${esc(e.message)}).</p>`
+  }
   if ($("zg-ins")) $("zg-ins").innerHTML = S.insightsHtml
 }
 

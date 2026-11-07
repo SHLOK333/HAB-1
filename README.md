@@ -554,7 +554,20 @@ check can fail.
 
 - [`publish.mjs`](arkiv/publish.mjs) follows the verifier's log and writes each verdict as a
   `boscon.hab.packet` entity, owned by the receiver's wallet, in one transaction per batch.
+- It also writes each SIG frame it heard as a `boscon.hab.sig` entity (the 100 raw bytes), so
+  anyone can redo the signature check from Arkiv alone.
 - [`query.mjs`](arkiv/query.mjs) reads sessions and packets back with no key and no backend.
+
+### `mcp/`: the flight over MCP, checked on your own machine
+
+An MCP server ([`mcp/README.md`](mcp/README.md)) that lets an AI assistant (Claude, Cursor, any
+MCP client) track the flight from Arkiv without trusting us. It holds no keys and calls no server
+of ours: it reads the public chain and re-checks every frame's Ed25519 signature and salted hash
+locally, against a beacon key you can supply yourself. Tools: `list_sessions`, `verify_session`,
+`get_track`, `latest_position`, `query_packets`, `get_winds`, `get_landing_predictions`,
+`get_ai_insights`, `decode_frame`. For session `live-11062318` (7 Nov 2026) it finds 19 of 19
+signature frames valid, 105 frames verified, all 3 forged frames caught, and no receiver verdict
+that fails its own check. `cd mcp && npm install && npm test` runs the same check.
 - Schema and judging files: [`schema.md`](arkiv/schema.md), [`friction.md`](arkiv/friction.md),
   [`reach.md`](arkiv/reach.md), [`why-arkiv.md`](arkiv/why-arkiv.md),
   [`how-you-use-arkiv.md`](arkiv/how-you-use-arkiv.md).
@@ -983,7 +996,7 @@ it, so it is standard Ed25519.
 | Requirement | Where |
 |---|---|
 | Writes to the current testnet with `@arkiv-network/sdk` | `arkiv/publish.mjs` (SDK 1.0.0) |
-| A feature users see reads from Arkiv | the map `web/index.html`, and `arkiv/query.mjs` |
+| A feature users see reads from Arkiv | the console (Live from Arkiv), the map `web/index.html`, `arkiv/query.mjs`, and the MCP server [`mcp/`](mcp/README.md), which re-checks every signature from Arkiv data alone |
 | Writer wallets and one query | below |
 | `/arkiv/schema.md` and `/arkiv/friction.md` | [`arkiv/schema.md`](arkiv/schema.md), [`arkiv/friction.md`](arkiv/friction.md) |
 | One file per judging criterion | [`reach.md`](arkiv/reach.md), [`why-arkiv.md`](arkiv/why-arkiv.md), [`how-you-use-arkiv.md`](arkiv/how-you-use-arkiv.md) |
