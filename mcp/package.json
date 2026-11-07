@@ -10,7 +10,7 @@
     "start": "node server.mjs",
     "test": "node selftest.mjs"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "dependencies": {
     "@arkiv-network/sdk": "1.0.0",
